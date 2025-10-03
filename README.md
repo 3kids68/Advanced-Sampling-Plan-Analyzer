@@ -59,7 +59,7 @@ For situations requiring zero-acceptance sampling plans, this feature allows you
 3.  **Visualize the results:** The OC curves and other results will be instantly displayed on the chart on the right.
 4.  **Compare and analyze:** Use the interactive charts to compare different plans and understand their performance.
 5.  **Export your work:** You can export the charts as PNG images and the data as CSV files for your reports and further analysis.
-
+https://www.youtube.com/watch?v=iOWHm5hUIGE
 ---
 
 ## About the Developer
