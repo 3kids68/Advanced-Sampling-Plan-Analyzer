@@ -1609,7 +1609,7 @@
                     var xVal = xScaleRef.getValueForPixel(cx);
                     var yVal = yScaleRef.getValueForPixel(cy);
                     if (isFinite(xVal) && isFinite(yVal)){
-                        var label = 'x='+xVal.toFixed(2)+'% , y='+(yVal*100).toFixed(1)+'%';
+                        var label = 'p='+xVal.toFixed(2)+'% , Pa='+(yVal*100).toFixed(1)+'%';
                         ctx.fillStyle = 'rgba(28,42,54,0.9)'; ctx.strokeStyle='rgba(64,84,102,0.9)';
                         ctx.setLineDash([]);
                         var pad = 6; ctx.font = '12px sans-serif';
