@@ -622,6 +622,7 @@
         width: 100%;
         height: 100%;
         background: rgba(0, 0, 0, 0.8);
+        -webkit-backdrop-filter: blur(5px);
         backdrop-filter: blur(5px);
     }
     
@@ -870,7 +871,7 @@
                         <div class="parameters">
                             <div class="group" style="grid-column: 1 / span 2;">
                                 <label>Color Theme</label>
-                                <select id="theme_selector" class="theme-selector">
+                                <select id="theme_selector" class="theme-selector" title="Select color theme">
                                     <option value="light">Light</option>
                                     <option value="light-blue">Light Blue</option>
                                     <option value="light-yellow">Light Yellow</option>
@@ -885,9 +886,9 @@
                     <div class="panel">
                         <h3>Parameters</h3>
                         <div class="parameters">
-                            <div class="group"><label>Lot Size (N)</label><input id="dist_lot_size" type="number" value="500"></div>
-                            <div class="group"><label>Sample Size (n)</label><input id="dist_n" type="number" value="124"></div>
-                            <div class="group" style="grid-column: 1 / span 2;"><label>Acceptance No. (c)</label><input id="dist_c" type="number" value="1"></div>
+                            <div class="group"><label>Lot Size (N)</label><input id="dist_lot_size" type="number" value="500" title="Lot Size (N)"></div>
+                            <div class="group"><label>Sample Size (n)</label><input id="dist_n" type="number" value="124" title="Sample Size (n)"></div>
+                            <div class="group" style="grid-column: 1 / span 2;"><label>Acceptance No. (c)</label><input id="dist_c" type="number" value="1" title="Acceptance No. (c)"></div>
                         </div>
                     </div>
                     <div class="panel">
@@ -914,7 +915,7 @@
                             <button class="btn" id="export_csv">Export Data</button>
                             <div style="margin-left:auto" class="btn-row">
                                 <label style="color:var(--text); font-size:0.9em;">Defect Rate Max (%)</label>
-                                <input id="x_max" type="number" value="5" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
+                                <input id="x_max" type="number" value="5" title="Defect Rate Max (%)" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
                             </div>
                         </div>
                         <div class="chart">
@@ -1774,8 +1775,8 @@
         const fmtPa = (v)=> v==null? '': `Pa=${(v.pa*100).toFixed(2)}%`;
         const distName = (dist==='hyper'?'Hypergeometric':(dist==='binom'?'Binomial':'Poisson'));
         let html = '';
-        if (lower) html += `<div id="rev_plan1" style="cursor:pointer;"><strong>Plan1</strong>  ${fmt(lower)}  ·  ${fmtPa(lower)}  ·  ${distName}</div>`;
-        if (upper) html += `<div id="rev_plan2" style="cursor:pointer;"><strong>Plan2</strong>  ${fmt(upper)}  ·  ${fmtPa(upper)}  ·  ${distName}</div>`;
+        if (lower) html += `<div id="rev_plan1" style="cursor:pointer; padding: 8px; border: 1px solid #424242; border-radius: 4px; margin: 4px 0; background: rgba(60, 60, 60, 0.8); color: white; font-weight: bold;"><strong>Plan1</strong>  ${fmt(lower)}  ·  ${fmtPa(lower)}  ·  ${distName}</div>`;
+        if (upper) html += `<div id="rev_plan2" style="cursor:pointer; padding: 8px; border: 1px solid #424242; border-radius: 4px; margin: 4px 0; background: rgba(60, 60, 60, 0.8); color: white; font-weight: bold;"><strong>Plan2</strong>  ${fmt(upper)}  ·  ${fmtPa(upper)}  ·  ${distName}</div>`;
         return html || '';
     }
     function attachPlanChoiceHandlers(){
@@ -1788,6 +1789,13 @@
             p1.style.pointerEvents = 'auto';
             p1.addEventListener('click', (e)=>{ e.preventDefault(); choosePlan('lower'); });
             p1.addEventListener('keydown', (e)=>{ if (e.key==='Enter' || e.key===' ') { e.preventDefault(); choosePlan('lower'); } });
+            // Add hover effect
+            p1.addEventListener('mouseenter', () => {
+                p1.style.background = 'rgba(80, 80, 80, 0.8)';
+            });
+            p1.addEventListener('mouseleave', () => {
+                p1.style.background = 'rgba(60, 60, 60, 0.8)';
+            });
         }
         if (p2) {
             p2.setAttribute('role','button');
@@ -1796,6 +1804,13 @@
             p2.style.pointerEvents = 'auto';
             p2.addEventListener('click', (e)=>{ e.preventDefault(); choosePlan('upper'); });
             p2.addEventListener('keydown', (e)=>{ if (e.key==='Enter' || e.key===' ') { e.preventDefault(); choosePlan('upper'); } });
+            // Add hover effect
+            p2.addEventListener('mouseenter', () => {
+                p2.style.background = 'rgba(80, 80, 80, 0.8)';
+            });
+            p2.addEventListener('mouseleave', () => {
+                p2.style.background = 'rgba(60, 60, 60, 0.8)';
+            });
         }
     }
     function choosePlan(choice){
@@ -1811,6 +1826,18 @@
         highlightSolvedInput(revLastTargetParam, N, n, c, aql, target);
         revLastPlan = { N:Math.round(N), n:Math.round(n), c:Math.round(c), aql:+aql, dist, targetPa: target };
         drawRevChart(revLastPlan.N, revLastPlan.n, revLastPlan.c, revLastPlan.aql, revLastPlan.dist);
+        
+        // Update visual indication of selected plan
+        const p1 = document.getElementById('rev_plan1');
+        const p2 = document.getElementById('rev_plan2');
+        if (p1) {
+            p1.style.border = choice === 'lower' ? '2px solid #1783FF' : '1px solid #424242';
+            p1.style.background = choice === 'lower' ? 'rgba(45, 45, 45, 0.9)' : 'rgba(60, 60, 60, 0.8)';
+        }
+        if (p2) {
+            p2.style.border = choice === 'upper' ? '2px solid #1783FF' : '1px solid #424242';
+            p2.style.background = choice === 'upper' ? 'rgba(45, 45, 45, 0.9)' : 'rgba(60, 60, 60, 0.8)';
+        }
     }
     function syncReverseDisabledInputs() {
         const target = revTargetParamSel?.value;
@@ -1950,6 +1977,8 @@
         if (targetParam!=='aql' && !(aql>0)) { revErrEl.textContent='Invalid AQL.'; revErrEl.style.display='block'; return; }
         if (dist!=='hyper') { if (targetParam==='N') { revErrEl.textContent='For Binomial/Poisson, N has no effect; cannot solve N.'; revErrEl.style.display='block'; return; } }
         let note='-'; let infoHidden=true; let infoText='';
+        // Reset plan choice to default (upper) for each new calculation
+        revPlanChoice = 'upper';
         if (targetParam==='aql') {
             const aqlPercent = solveForAql(target, dist, N, n, c); aql = aqlPercent;
         } else if (targetParam==='c') {
