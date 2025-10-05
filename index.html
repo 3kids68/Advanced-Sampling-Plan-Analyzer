@@ -986,6 +986,15 @@
                     <div class="panel">
                         <h3>Parameters</h3>
                         <div class="parameters">
+                            <div class="group" style="grid-column: 1 / span 2;"><label>Calculate Target</label>
+                                <select id="rev_target_param">
+                                    <option value="aql">Calculate AQL (%)</option>
+                                    <option value="c">Calculate Acceptance No. (c)</option>
+                                    <option value="n">Calculate Sample Size (n)</option>
+                                    <option value="N">Calculate Lot Size (N)</option>
+                                    <option value="targetPa">Calculate Target Pa (%)</option>
+                                </select>
+                            </div>
                             <div class="group"><label>Lot Size (N)</label><input id="rev_lot_size" type="number" value="500"></div>
                             <div class="group"><label>Sample Size (n)</label><input id="rev_n" type="number" value="125"></div>
                             <div class="group"><label>Acceptance No. (c)</label><input id="rev_c" type="number" value="1"></div>
@@ -996,15 +1005,6 @@
                                     <option value="hyper">Hypergeometric</option>
                                     <option value="binom" selected>Binomial</option>
                                     <option value="pois">Poisson</option>
-                                </select>
-                            </div>
-                            <div class="group" style="grid-column: 1 / span 2;"><label>Calculate Target</label>
-                                <select id="rev_target_param">
-                                    <option value="aql">Calculate AQL (%)</option>
-                                    <option value="c">Calculate Acceptance No. (c)</option>
-                                    <option value="n">Calculate Sample Size (n)</option>
-                                    <option value="N">Calculate Lot Size (N)</option>
-                                    <option value="targetPa">Calculate Target Pa (%)</option>
                                 </select>
                             </div>
                         </div>
