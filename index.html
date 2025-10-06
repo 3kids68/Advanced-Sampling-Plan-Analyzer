@@ -1081,9 +1081,13 @@
                         <div class="parameters" style="grid-template-columns: 1fr 1fr;">
                             <div class="group"><label>Code Letter</label><input id="ss_result_code" type="text" value="-" disabled></div>
                             <div class="group"><label>Sample Size (n)</label><input id="ss_result_n" type="text" value="-" disabled></div>
-                            <div class="group"><label>Acceptance No. (c)</label><input id="ss_result_c" type="text" value="-" disabled></div>
+                            <div class="group"><label>Acceptance No. (Ac)</label><input id="ss_result_c" type="text" value="-" disabled></div>
+                            <div class="group"><label>Rejection No. (Re)</label><input id="ss_result_re" type="text" value="-" disabled></div>
                             <div class="group"><label>Inspection</label><input id="ss_result_state" type="text" value="Normal" disabled></div>
                             <div class="group" style="grid-column: 1 / span 2;"><label>Notes</label><input id="ss_result_note" type="text" value="-" disabled></div>
+                            <div class="group"><label>P(Accept at AQL)</label><input id="ss_result_pa" type="text" value="-" disabled></div>
+                            <div class="group"><label>P(Reject at AQL)</label><input id="ss_result_prej" type="text" value="-" disabled></div>
+                            <div class="group" style="grid-column: 1 / span 2;"><label>P(Continue at AQL)</label><input id="ss_result_pcont" type="text" value="-" disabled></div>
                         </div>
                     </div>
                 </aside>
@@ -1339,26 +1343,26 @@
         'R': { '0.010': 'up'  , '0.015': 'up'  , '0.025': 1     , '0.040': 2     , '0.065': 3     , '0.10': 5     , '0.15': 7     , '0.25': 10    , '0.40': 14    , '0.65': 21    , '1.0': 'up'  , '1.5': 'up'  , '2.5': 'up'  , '4.0': 'up'  , '6.5': 'up'  , '10': 'up'  , '15': 'up'  , '25': 'up'  , '40': 'up'  , '65': 'up'  , '100': 'up'  , '150': 'up'  , '250': 'up'  , '400': 'up'  , '650': 'up'  , '1000': 'up'  }
     };
 
-    // Reduced Inspection Database
+    // Reduced Inspection Database (embedded for standalone use)
     const codeLettersOrder_reduced = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R'];
     const reduced_sampleSizes = {'A': 2, 'B': 2, 'C': 2, 'D': 3, 'E': 5, 'F': 8, 'G': 13, 'H': 20, 'J': 32, 'K': 50, 'L': 80, 'M': 125, 'N': 200, 'P': 315, 'Q': 500, 'R': 800};
     const reduced_rawMasterTableData = {
-        'A': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down', '1.0': 'down', '1.5': 'down', '2.5': 'down', '4.0': 'down', '6.5': 0     , '10': 'down', '15': 'down', '25': 1   , '40': 2   , '65': 3   , '100': 5   , '150': 7   , '250': 10  , '400': 14  , '650': 21  , '1000': 30   },
-        'B': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down', '1.0': 'down', '1.5': 'down', '2.5': 'down', '4.0': 0     , '6.5': 'up'  , '10': 'down', '15': 0     , '25': 1   , '40': 2   , '65': 3   , '100': 5   , '150': 7   , '250': 10  , '400': 14  , '650': 21  , '1000': 30   },
-        'C': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down', '1.0': 'down', '1.5': 'down', '2.5': 0     , '4.0': 'up'  , '6.5': 'down', '10': 0     , '15': 1     , '25': 1   , '40': 2   , '65': 3   , '100': 5   , '150': 7   , '250': 10  , '400': 14  , '650': 21  , '1000': 'up' },
-        'D': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down', '1.0': 'down', '1.5': 0     , '2.5': 'up'  , '4.0': 'down', '6.5': 0     , '10': 1     , '15': 1     , '25': 2   , '40': 3   , '65': 5   , '100': 7   , '150': 10  , '250': 14  , '400': 21  , '650': 'up', '1000': 'up' },
-        'E': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down', '1.0': 0     , '1.5': 'up'  , '2.5': 'down', '4.0': 0     , '6.5': 1     , '10': 1     , '15': 2     , '25': 3   , '40': 5   , '65': 7   , '100': 10  , '150': 14  , '250': 21  , '400': 'up', '650': 'up', '1000': 'up' },
-        'F': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 0     , '1.0': 'up'  , '1.5': 'down', '2.5': 0     , '4.0': 1     , '6.5': 1     , '10': 2     , '15': 3     , '25': 5   , '40': 7   , '65': 10  , '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'G': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 0     , '0.65': 'up'  , '1.0': 'down', '1.5': 0     , '2.5': 1     , '4.0': 1     , '6.5': 2     , '10': 3     , '15': 5     , '25': 7   , '40': 10  , '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'H': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 0     , '0.40': 'up'  , '0.65': 'down', '1.0': 1     , '1.5': 1     , '2.5': 1     , '4.0': 2     , '6.5': 3     , '10': 5     , '15': 7     , '25': 10  , '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'J': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 0     , '0.25': 'up'  , '0.40': 'down', '0.65': 0     , '1.0': 1     , '1.5': 1     , '2.5': 2     , '4.0': 3     , '6.5': 5     , '10': 7     , '15': 10    , '25': 'up', '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'K': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 0     , '0.15': 'up'  , '0.25': 'down', '0.40': 0     , '0.65': 1     , '1.0': 2     , '1.5': 2     , '2.5': 3     , '4.0': 5     , '6.5': 7     , '10': 10    , '15': 'up'  , '25': 'up', '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'L': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 0     , '0.10': 'up'  , '0.15': 'down', '0.25': 0     , '0.40': 1     , '0.65': 1     , '1.0': 3     , '1.5': 3     , '2.5': 5     , '4.0': 7     , '6.5': 10    , '10': 'up'  , '15': 'up'  , '25': 'up', '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'M': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 0     , '0.065': 'up'  , '0.10': 'down', '0.15': 0     , '0.25': 1     , '0.40': 1     , '0.65': 2     , '1.0': 5     , '1.5': 5     , '2.5': 7     , '4.0': 10    , '6.5': 'up'  , '10': 'up'  , '15': 'up'  , '25': 'up', '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'N': { '0.010': 'down', '0.015': 'down', '0.025': 0     , '0.040': 'up'  , '0.065': 'down', '0.10': 0     , '0.15': 1     , '0.25': 1     , '0.40': 2     , '0.65': 3     , '1.0': 8     , '1.5': 7     , '2.5': 10    , '4.0': 'up'  , '6.5': 'up'  , '10': 'up'  , '15': 'up'  , '25': 'up', '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'P': { '0.010': 'down', '0.015': 0     , '0.025': 'up'  , '0.040': 'down', '0.065': 0     , '0.10': 1     , '0.15': 1     , '0.25': 2     , '0.40': 3     , '0.65': 5     , '1.0': 8     , '1.5': 10    , '2.5': 'up'  , '4.0': 'up'  , '6.5': 'up'  , '10': 'up'  , '15': 'up'  , '25': 'up', '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'Q': { '0.010': 0     , '0.015': 'up'  , '0.025': 'down', '0.040': 0     , '0.065': 1     , '0.10': 1     , '0.15': 2     , '0.25': 3     , '0.40': 5     , '0.65': 7     , '1.0': 18    , '1.5': 'up'  , '2.5': 'up'  , '4.0': 'up'  , '6.5': 'up'  , '10': 'up'  , '15': 'up'  , '25': 'up', '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' },
-        'R': { '0.010': 'up'  , '0.015': 'up'  , '0.025': 0     , '0.040': 1     , '0.065': 1     , '0.10': 2     , '0.15': 3     , '0.25': 5     , '0.40': 7     , '0.65': 10    , '1.0': 'up'  , '1.5': 'up'  , '2.5': 'up'  , '4.0': 'up'  , '6.5': 'up'  , '10': 'up'  , '15': 'up'  , '25': 'up', '40': 'up', '65': 'up', '100': 'up', '150': 'up', '250': 'up', '400': 'up', '650': 'up', '1000': 'up' }
+        'A': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down' , '1.0': 'down' , '1.5': 'down' , '2.5': 'down' , '4.0': 'down' , '6.5': { ac: 0, re: 1 } , '10': 'down' , '15': 'down' , '25': { ac: 1, re: 2 } , '40': { ac: 2, re: 3 } , '65': { ac: 3, re: 4 } , '100': { ac: 5, re: 6 } , '150': { ac: 7, re: 8 } , '250': { ac: 10, re: 11 } , '400': { ac: 14, re: 15 } , '650': { ac: 21, re: 22 } , '1000': { ac: 30, re: 31 } },
+        'B': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down' , '1.0': 'down' , '1.5': 'down' , '2.5': 'down' , '4.0': { ac: 0, re: 1 } , '6.5': 'up'   , '10': 'down' , '15': { ac: 0, re: 2 } , '25': { ac: 1, re: 3 } , '40': { ac: 2, re: 4 } , '65': { ac: 3, re: 5 } , '100': { ac: 5, re: 6 } , '150': { ac: 7, re: 8 } , '250': { ac: 10, re: 11 } , '400': { ac: 14, re: 15 } , '650': { ac: 21, re: 22 } , '1000': { ac: 30, re: 31 } },
+        'C': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down' , '1.0': 'down' , '1.5': 'down' , '2.5': { ac: 0, re: 1 } , '4.0': 'up'   , '6.5': 'down' , '10': { ac: 0, re: 2 } , '15': { ac: 1, re: 3 } , '25': { ac: 1, re: 4 } , '40': { ac: 2, re: 5 } , '65': { ac: 3, re: 6 } , '100': { ac: 5, re: 8 } , '150': { ac: 7, re: 10 } , '250': { ac: 10, re: 13 } , '400': { ac: 14, re: 17 } , '650': { ac: 21, re: 24 } , '1000': 'up'   },
+        'D': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down' , '1.0': 'down' , '1.5': { ac: 0, re: 1 } , '2.5': 'up'   , '4.0': 'down' , '6.5': { ac: 0, re: 2 } , '10': { ac: 1, re: 3 } , '15': { ac: 1, re: 4 } , '25': { ac: 2, re: 5 } , '40': { ac: 3, re: 6 } , '65': { ac: 5, re: 8 } , '100': { ac: 7, re: 10 } , '150': { ac: 10, re: 13 } , '250': { ac: 14, re: 17 } , '400': { ac: 21, re: 24 } , '650': 'up'   , '1000': 'up'   },
+        'E': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': 'down' , '1.0': { ac: 0, re: 1 } , '1.5': 'up'   , '2.5': 'down' , '4.0': { ac: 0, re: 2 } , '6.5': { ac: 1, re: 3 } , '10': { ac: 1, re: 4 } , '15': { ac: 2, re: 5 } , '25': { ac: 3, re: 6 } , '40': { ac: 5, re: 8 } , '65': { ac: 7, re: 10 } , '100': { ac: 10, re: 13 } , '150': { ac: 14, re: 17 } , '250': { ac: 21, re: 24 } , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'F': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': 'down', '0.65': { ac: 0, re: 1 } , '1.0': 'up'   , '1.5': 'down' , '2.5': { ac: 0, re: 2 } , '4.0': { ac: 1, re: 3 } , '6.5': { ac: 1, re: 4 } , '10': { ac: 2, re: 5 } , '15': { ac: 3, re: 6 } , '25': { ac: 5, re: 8 } , '40': { ac: 7, re: 10 } , '65': { ac: 10, re: 13 } , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'G': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': 'down', '0.40': { ac: 0, re: 1 } , '0.65': 'up'   , '1.0': 'down' , '1.5': { ac: 0, re: 2 } , '2.5': { ac: 1, re: 3 } , '4.0': { ac: 1, re: 4 } , '6.5': { ac: 2, re: 5 } , '10': { ac: 3, re: 6 } , '15': { ac: 5, re: 8 } , '25': { ac: 7, re: 10 } , '40': { ac: 10, re: 13 } , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'H': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': 'down', '0.25': { ac: 0, re: 1 } , '0.40': 'up'  , '0.65': 'down' , '1.0': { ac: 0, re: 2 } , '1.5': { ac: 1, re: 3 } , '2.5': { ac: 1, re: 4 } , '4.0': { ac: 2, re: 5 } , '6.5': { ac: 3, re: 6 } , '10': { ac: 5, re: 8 } , '15': { ac: 7, re: 10 } , '25': { ac: 10, re: 13 } , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'J': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': 'down', '0.15': { ac: 0, re: 1 } , '0.25': 'up'  , '0.40': 'down', '0.65': { ac: 0, re: 2 } , '1.0': { ac: 1, re: 3 } , '1.5': { ac: 1, re: 4 } , '2.5': { ac: 2, re: 5 } , '4.0': { ac: 3, re: 6 } , '6.5': { ac: 5, re: 8 } , '10': { ac: 7, re: 10 } , '15': { ac: 10, re: 13 } , '25': 'up'   , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'K': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': 'down', '0.10': { ac: 0, re: 1 } , '0.15': 'up'  , '0.25': 'down', '0.40': { ac: 0, re: 2 } , '0.65': { ac: 1, re: 3 } , '1.0': { ac: 1, re: 4 } , '1.5': { ac: 2, re: 5 } , '2.5': { ac: 3, re: 6 } , '4.0': { ac: 5, re: 8 } , '6.5': { ac: 7, re: 10 } , '10': { ac: 10, re: 13 } , '15': 'up'   , '25': 'up'   , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'L': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': 'down', '0.065': { ac: 0, re: 1 } , '0.10': 'up'  , '0.15': 'down', '0.25': { ac: 0, re: 2 } , '0.40': { ac: 1, re: 3 } , '0.65': { ac: 1, re: 4 } , '1.0': { ac: 2, re: 5 } , '1.5': { ac: 3, re: 6 } , '2.5': { ac: 5, re: 8 } , '4.0': { ac: 7, re: 10 } , '6.5': { ac: 10, re: 14 } , '10': 'up'   , '15': 'up'   , '25': 'up'   , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'M': { '0.010': 'down', '0.015': 'down', '0.025': 'down', '0.040': { ac: 0, re: 1 } , '0.065': 'up'  , '0.10': 'down', '0.15': { ac: 0, re: 2 } , '0.25': { ac: 1, re: 3 } , '0.40': { ac: 1, re: 4 } , '0.65': { ac: 2, re: 5 } , '1.0': { ac: 3, re: 6 } , '1.5': { ac: 5, re: 8 } , '2.5': { ac: 7, re: 10 } , '4.0': { ac: 10, re: 13 } , '6.5': 'up'   , '10': 'up'   , '15': 'up'   , '25': 'up'   , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'N': { '0.010': 'down', '0.015': 'down', '0.025': { ac: 0, re: 1 } , '0.040': 'up'  , '0.065': 'down', '0.10': { ac: 0, re: 2 } , '0.15': { ac: 1, re: 3 } , '0.25': { ac: 1, re: 4 } , '0.40': { ac: 2, re: 5 } , '0.65': { ac: 3, re: 6 } , '1.0': { ac: 5, re: 8 } , '1.5': { ac: 7, re: 10 } , '2.5': { ac: 10, re: 13 } , '4.0': 'up'   , '6.5': 'up'   , '10': 'up'   , '15': 'up'   , '25': 'up'   , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'P': { '0.010': 'down', '0.015': { ac: 0, re: 1 } , '0.025': 'up'  , '0.040': 'down', '0.065': { ac: 0, re: 2 } , '0.10': { ac: 1, re: 3 } , '0.15': { ac: 1, re: 4 } , '0.25': { ac: 2, re: 5 } , '0.40': { ac: 3, re: 6 } , '0.65': { ac: 5, re: 8 } , '1.0': { ac: 7, re: 10 } , '1.5': { ac: 10, re: 13 } , '2.5': 'up'   , '4.0': 'up'   , '6.5': 'up'   , '10': 'up'   , '15': 'up'   , '25': 'up'   , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'Q': { '0.010': { ac: 0, re: 1 } , '0.015': 'up'  , '0.025': 'down', '0.040': { ac: 0, re: 2 } , '0.065': { ac: 1, re: 3 } , '0.10': { ac: 1, re: 4 } , '0.15': { ac: 2, re: 5 } , '0.25': { ac: 3, re: 6 } , '0.40': { ac: 5, re: 8 } , '0.65': { ac: 7, re: 10 } , '1.0': { ac: 10, re: 13 } , '1.5': 'up'   , '2.5': 'up'   , '4.0': 'up'   , '6.5': 'up'   , '10': 'up'   , '15': 'up'   , '25': 'up'   , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   },
+        'R': { '0.010': 'up'  , '0.015': 'up'  , '0.025': { ac: 0, re: 2 } , '0.040': { ac: 1, re: 3 } , '0.065': { ac: 1, re: 4 } , '0.10': { ac: 2, re: 5 } , '0.15': { ac: 3, re: 6 } , '0.25': { ac: 5, re: 8 } , '0.40': { ac: 7, re: 10 } , '0.65': { ac: 10, re: 13 } , '1.0': 'up'   , '1.5': 'up'   , '2.5': 'up'   , '4.0': 'up'   , '6.5': 'up'   , '10': 'up'   , '15': 'up'   , '25': 'up'   , '40': 'up'   , '65': 'up'   , '100': 'up'   , '150': 'up'   , '250': 'up'   , '400': 'up'   , '650': 'up'   , '1000': 'up'   }
     };
 
     // Tightened Inspection Database
@@ -1573,14 +1577,26 @@
 
     function ensurePlanChart(){
         if (planChart) return planChart;
-        var legendLabels = { color: getThemeColors().text };
+        var legendLabels = { color: getThemeColors().text, filter: function(item, chart){ var ds = chart.datasets && chart.datasets[item.datasetIndex]; return !(ds && ds.type==='scatter'); } };
         var plugins = { legend: { display: true, labels: legendLabels } };
         var xScale = { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, grid: { color: getThemeColors().grid } };
         var yTicks = { callback: function(v){ return (v*100).toFixed(0)+'%'; } };
         var yScale = { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: yTicks, grid: { color: getThemeColors().grid } };
         var scales = { x: xScale, y: yScale };
-        // crosshair and hover coordinate display
-        plugins.tooltip = { enabled: false };
+        // crosshair and tooltip: enable tooltip only for AQL scatter markers
+        plugins.tooltip = {
+            enabled: true,
+            filter: function(context){ return context.dataset && context.dataset.type==='scatter'; },
+            callbacks: {
+                label: function(context){
+                    var x = context.parsed && context.parsed.x; var y = context.parsed && context.parsed.y;
+                    var base = (context.dataset && (context.dataset._aqlLabel || context.dataset.label)) || 'AQL';
+                    var xTxt = (isFinite(x)?(+x).toFixed(x<1?3:2):'-');
+                    var yTxt = (isFinite(y)?(y*100).toFixed(1):'-');
+                    return base+': p='+xTxt+'% , Pa='+yTxt+'%';
+                }
+            }
+        };
         var options = { responsive: true, maintainAspectRatio: false, animation: false, plugins: plugins, scales: scales };
         var data = { datasets: [] };
         planChart = new Chart(planCtx, { type: 'line', data: data, options: options });
@@ -1662,6 +1678,26 @@
                 data.push({ x:px, y: computePlanPa(dist, N, plan.n, plan.c, px/100) }); 
             }
             datasets.push({ label: plan.label, data: data, borderColor: color, backgroundColor: color+'33', borderWidth:2, pointRadius:0, tension:0.1 });
+            // Add AQL marker if available
+            if (plan.aql!=null && isFinite(+plan.aql)){
+                var aqlX = +plan.aql; if (aqlX>=0){
+                    var paAtAql = computePlanPa(dist, N, plan.n, plan.c, aqlX/100);
+                    datasets.push({
+                        type: 'scatter',
+                        // Hide from legend; use tooltip only
+                        label: '',
+                        data: [{ x: aqlX, y: paAtAql }],
+                        pointRadius: 5,
+                        pointHoverRadius: 6,
+                        showLine: false,
+                        borderColor: color,
+                        pointBackgroundColor: color,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1,
+                        _aqlLabel: 'AQL'
+                    });
+                }
+            }
         }
         planChart.data.datasets = datasets; planChart.update();
         renderPlanList();
@@ -2314,7 +2350,7 @@
         ssChart = new Chart(ssCtx, { type:'line', data:{datasets:[]}, options:{ responsive:true, maintainAspectRatio:false, animation:false,
             plugins:{ legend:{ display:true, labels:{ color: getThemeColors().text } } },
             scales:{ x:{ type:'linear', title:{ display:true, text:'Defect Rate (p%)' }, grid:{ color: getThemeColors().grid } },
-                    y:{ min:0, max:1, title:{ display:true, text:'Acceptance Probability (Pa%)' }, ticks:{ callback:function(v){ return (v*100).toFixed(0)+'%'; } }, grid:{ color: getThemeColors().grid } } }
+                    y:{ min:0, max:1, title:{ display:true, text:'Probability' }, ticks:{ callback:function(v){ return (v*100).toFixed(0)+'%'; } }, grid:{ color: getThemeColors().grid } } }
         }});
         return ssChart;
     }
@@ -2346,6 +2382,18 @@
                  label: 'Normal' };
     }
     function getSampleSizeFromCode(code) { const r=getStateRefs(); return r.sizes?.[code] || null; }
+    function normalizeAcReCell(cell, isReduced){
+        if (cell==null) return null;
+        if (typeof cell==='number') {
+            if (isReduced && cell===0) return { ac: 0, re: 1 }; // per reduced table common rule
+            return { ac: cell, re: cell+1 };
+        }
+        if (Array.isArray(cell) && cell.length===2 && cell.every(n=>typeof n==='number')) {
+            return { ac: cell[0], re: cell[1] };
+        }
+        if (typeof cell==='object' && typeof cell.ac==='number' && typeof cell.re==='number') return { ac: cell.ac, re: cell.re };
+        return null;
+    }
     function findFinalPlan(initialLetter, aqlStr) {
         const refs = getStateRefs();
         if (!refs.table || !refs.order) return { finalLetter: null, finalAc: null };
@@ -2362,8 +2410,10 @@
             visited.add(currentLetter);
             plan = refs.table[currentLetter]?.[aqlStr];
         }
-        if (typeof plan !== 'number') return { finalLetter: null, finalAc: null };
-        return { finalLetter: currentLetter, finalAc: plan };
+        // allow number or {ac,re}
+        const norm = normalizeAcReCell(plan, (ssStateSel?.value==='reduced'));
+        if (!norm) return { finalLetter: null, finalAc: null };
+        return { finalLetter: currentLetter, finalAc: norm.ac, finalRe: norm.re };
     }
     function ssComputePa(dist, N, n, c, p) {
         if (dist==='binom') return jStat.binomial.cdf(c, n, p);
@@ -2373,8 +2423,31 @@
     function drawSsChart(N, n, c, aql, code, level, dist) {
         const maxX = parseFloat(ssXMaxEl.value||'5'); const xs = generatePValuesC0(maxX);
         ensureSsChart(); ssChart.options.scales.x.max = maxX;
-        const data = xs.map(px=>({x:px,y:ssComputePa(dist, N, n, c, px/100)}));
-        ssChart.data.datasets = [{ label:`AQL Plan (n=${n}, c=${c}, AQL=${aql}, Code=${code}, Level=${level})`, data, borderColor:'rgba(241,196,15,1)', backgroundColor:'rgba(241,196,15,0.25)', borderWidth:2, pointRadius:0, tension:0.1 }];
+        // Pa = P[X <= c], Pr = P[X >= re], Pc band between Pa and (1-Pr)
+        const acceptColor = 'rgba(241,196,15,1)';
+        const rejectColor = 'rgba(231,76,60,1)';
+        const continueFill = 'rgba(52,152,219,0.20)';
+        const paData = []; const prData = []; const upperData = [];
+        const re = (typeof ssLastPlan?.re==='number') ? ssLastPlan.re : (c!=null?c+1:null);
+        for (let i=0;i<xs.length;i++){
+            const px = xs[i]; const p = px/100;
+            const pa = ssComputePa(dist, N, n, c, p);
+            let pr;
+            if (re!=null && re>c) {
+                const cdfReMinus1 = ssComputePa(dist, N, n, re-1, p);
+                pr = Math.max(0, 1 - cdfReMinus1);
+            } else {
+                pr = Math.max(0, 1 - pa);
+            }
+            paData.push({x:px,y:pa});
+            prData.push({x:px,y:pr});
+            upperData.push({x:px,y:Math.max(0, 1 - pr)}); // Pa + Pc
+        }
+        ssChart.data.datasets = [
+            { label:`Accept (Pa)  n=${n}, c=${c}, AQL=${aql}, Code=${code}, Level=${level}`, data:paData, borderColor:acceptColor, backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.1 },
+            { label:'Continue (Pc)', data:upperData, borderColor:'rgba(0,0,0,0)', backgroundColor:continueFill, fill:'-1', pointRadius:0, tension:0.1 },
+            { label:'Reject (Pr)', data:prData, borderColor:rejectColor, backgroundColor:'transparent', borderDash:[6,4], borderWidth:2, pointRadius:0, tension:0.1 }
+        ];
         ssChart.update();
     }
     function doSsLookup() {
@@ -2385,7 +2458,7 @@
         const code0 = getCodeLetter(N, level); if (!code0) { ssErrEl.textContent='No code letter for inputs.'; ssErrEl.style.display='block'; return; }
         const finalPlan = findFinalPlan(code0, aqlStr);
         if (!finalPlan.finalLetter || typeof finalPlan.finalAc !== 'number') { ssErrEl.textContent='No numeric acceptance number found for this AQL in the selected state.'; ssErrEl.style.display='block'; if (ssChart) { ssChart.data.datasets=[]; ssChart.update(); } return; }
-        const code = finalPlan.finalLetter; const c = finalPlan.finalAc;
+        const code = finalPlan.finalLetter; const c = finalPlan.finalAc; const re = (typeof finalPlan.finalRe==='number'?finalPlan.finalRe:(c!=null?c+1:null));
         const n = getSampleSizeFromCode(code); if (!n) { ssErrEl.textContent='No sample size for code letter in this state.'; ssErrEl.style.display='block'; return; }
         let note='-'; if (code !== code0) note = `Resolved by ${code0} → ${code}`;
 
@@ -2393,11 +2466,25 @@
         document.getElementById('ss_result_code').value = code;
         document.getElementById('ss_result_n').value = String(n);
         document.getElementById('ss_result_c').value = (c==null?'-':String(c));
+        const reEl = document.getElementById('ss_result_re'); if (reEl) reEl.value = (re==null?'-':String(re));
         const stateLabel = ssStateSel.value.charAt(0).toUpperCase()+ssStateSel.value.slice(1);
         document.getElementById('ss_result_state').value = stateLabel;
         document.getElementById('ss_result_note').value = note;
 
         const dist = ssDistSel.value;
+        // compute tri-state at AQL for reduced
+        const p = parseFloat(aqlStr)/100;
+        const pa = ssComputePa(dist, N, n, c, p);
+        let prej = 0, pcont = 0;
+        if (ssStateSel.value==='reduced' && re!=null && re>c) {
+            // P(reject) = P[X >= Re] = 1 - P[X <= Re-1]
+            const cdfReMinus1 = ssComputePa(dist, N, n, re-1, p);
+            prej = Math.max(0, 1 - cdfReMinus1);
+            pcont = Math.max(0, 1 - pa - prej);
+        }
+        const paEl = document.getElementById('ss_result_pa'); if (paEl) paEl.value = (pa*100).toFixed(2)+'%';
+        const prEl = document.getElementById('ss_result_prej'); if (prEl) prEl.value = (prej*100).toFixed(2)+'%';
+        const pcEl = document.getElementById('ss_result_pcont'); if (pcEl) pcEl.value = (pcont*100).toFixed(2)+'%';
         
         // Check if n >= N (全檢的情況)
         if (n >= N) {
@@ -2410,7 +2497,7 @@
             return;
         }
         
-        ssLastPlan = { N, level, code, n, c, aql: aqlStr, dist };
+        ssLastPlan = { N, level, code, n, c, re, aql: aqlStr, dist };
         if (c==null) { if (ssChart) { ssChart.data.datasets=[]; ssChart.update(); } return; }
         drawSsChart(N, n, c, aqlStr, code, level, dist);
     }
@@ -2648,34 +2735,104 @@
             title: "🎓 Quiz: Test Your Knowledge!",
             content: `
                 <h3>Quick Knowledge Check</h3>
-                <p>Let's test what you've learned! Click the correct answer:</p>
-                
-                <div class="tutorial-quiz">
-                    <p><strong>Question 1:</strong> Which distribution should you use for sampling 50 items from a lot of 200?</p>
-                    <div class="tutorial-quiz-option" data-correct="true">Hypergeometric (accounts for finite lot size)</div>
-                    <div class="tutorial-quiz-option" data-correct="false">Binomial (assumes infinite lot)</div>
-                    <div class="tutorial-quiz-option" data-correct="false">Poisson (approximation only)</div>
+                <p>Randomly selected questions. Click the correct answer:</p>
+                <div id="tutorial-quiz-container"></div>
+                <div style="margin-top: 16px; display:flex; gap:8px; align-items:center;">
+                    <button id="quiz-refresh-btn" class="btn">Refresh Quiz</button>
+                    <span style="color: var(--muted); font-style: italic;">Each refresh pulls new questions covering key sampling plan topics.</span>
                 </div>
-                
-                <div class="tutorial-quiz">
-                    <p><strong>Question 2:</strong> What does AQL 1.0% mean?</p>
-                    <div class="tutorial-quiz-option" data-correct="false">Exactly 1% defects are allowed</div>
-                    <div class="tutorial-quiz-option" data-correct="true">Lots with 1% defects are accepted ~95% of the time</div>
-                    <div class="tutorial-quiz-option" data-correct="false">The average defect rate will be 1%</div>
-                </div>
-                
-                <div class="tutorial-quiz">
-                    <p><strong>Question 3:</strong> What makes an OC curve "better"?</p>
-                    <div class="tutorial-quiz-option" data-correct="false">It's higher on the graph</div>
-                    <div class="tutorial-quiz-option" data-correct="true">It's steeper (better discrimination)</div>
-                    <div class="tutorial-quiz-option" data-correct="false">It's smoother</div>
-                </div>
-                
-                <p style="margin-top: 20px; color: var(--muted); font-style: italic;">Click on your answers to see if you're correct!</p>
             `,
-            highlight: null
+            highlight: null,
+            isQuiz: true
         }
     ];
+
+    // ===== Quiz bank (>=50 questions) =====
+    const quizQuestionBank = [
+        { q: 'Which distribution applies to finite lots with sampling without replacement?', options: ['Hypergeometric', 'Binomial', 'Poisson'], answer: 0 },
+        { q: 'For very large (or effectively infinite) lots with constant defect rate, which distribution is typical?', options: ['Hypergeometric', 'Binomial', 'Poisson'], answer: 1 },
+        { q: 'When sample size is large and defect rate is small, which approximation is commonly used?', options: ['Poisson', 'Binomial', 'Normal'], answer: 0 },
+        { q: 'On an OC curve, what does the y-axis represent?', options: ['Defect rate', 'Acceptance probability (Pa)', 'Sample size'], answer: 1 },
+        { q: 'On an OC curve, what is usually on the x-axis?', options: ['Defect rate p (%)', 'Sample size n', 'AQL value'], answer: 0 },
+        { q: 'What does AQL 1.0% typically mean?', options: ['Allow 1% defects', 'Lots with 1% defects are accepted about 95% of the time', 'Average defect rate equals 1%'], answer: 1 },
+        { q: 'Under the same distribution, increasing n tends to make the OC curve…', options: ['Steeper', 'Flatter', 'Unchanged'], answer: 0 },
+        { q: 'With the same n, increasing c tends to shift the curve…', options: ['To the right', 'To the left', 'No shift'], answer: 0 },
+        { q: 'In a C=0 plan, what is c?', options: ['0', '1', '2'], answer: 0 },
+        { q: 'In plan parameters (n, c), what does c denote?', options: ['Sample size', 'Acceptance number', 'Lot size'], answer: 1 },
+        { q: 'Given N=500, n=50, without replacement, which distribution?', options: ['Binomial', 'Hypergeometric', 'Poisson'], answer: 1 },
+        { q: 'A smaller AQL indicates…', options: ['Looser control', 'Stricter control', 'No relation to strictness'], answer: 1 },
+        { q: 'Which pages can export a plan to Multiple Plan Comparison?', options: ['Reverse', 'AQL Lookup', 'Both'], answer: 2 },
+        { q: 'Where do you set the x-axis maximum on the Comparison chart?', options: ['Left parameters panel', 'Chart toolbar (top-right)', 'Hidden setting'], answer: 1 },
+        { q: 'In hypergeometric distribution, which extra parameter is required?', options: ['Lot size N', 'Lambda', 'Mean'], answer: 0 },
+        { q: 'The Poisson parameter is typically approximated as…', options: ['n·p', 'n/p', 'n+p'], answer: 0 },
+        { q: 'To display an AQL marker on the chart, you must provide…', options: ['AQL (%)', 'LQ (%)', 'α and β risks'], answer: 0 },
+        { q: 'A steeper OC curve implies…', options: ['Better discrimination', 'Worse discrimination', 'Cannot tell'], answer: 0 },
+        { q: 'On the Reverse page you can solve for…', options: ['AQL', 'n', 'c', 'All of the above'], answer: 3 },
+        { q: 'A common use case of C=0 plans is…', options: ['High-risk critical defects', 'General inspection', 'Documentation'], answer: 0 },
+        { q: 'For Binomial, the acceptance probability uses CDF(c; n, p). Here p means…', options: ['Sample proportion', 'Defect rate', 'Pass rate'], answer: 1 },
+        { q: 'For Poisson in sampling, λ is often…', options: ['n·p', 'p/n', 'n/p'], answer: 0 },
+        { q: 'Across different distributions, OC curves for the same (n, c) can be…', options: ['Identical', 'Different', 'Not drawable'], answer: 1 },
+        { q: 'When N is very large, sampling without replacement can be approximated by…', options: ['Binomial', 'Hypergeometric', 'Poisson'], answer: 0 },
+        { q: 'The AQL lookup page references which standard?', options: ['ANSI/ASQ Z1.4', 'MIL-STD-105E', 'ISO 9001'], answer: 0 },
+        { q: 'To compare plans, you should examine…', options: ['OC curve shape/shift', 'x-axis unit only', 'Chart background color'], answer: 0 },
+        { q: 'Increasing c typically affects producer’s risk (α) by…', options: ['Increasing', 'Decreasing', 'No change'], answer: 1 },
+        { q: 'Increasing n typically affects consumer’s risk (β) by…', options: ['Increasing', 'Decreasing', 'No change'], answer: 1 },
+        { q: 'In this tool, Pa ranges between…', options: ['0–100', '0–1', '1–100'], answer: 1 },
+        { q: 'The x-axis p values are expressed in…', options: ['Decimal fraction', 'Percent (%)', 'Per mille (‰)'], answer: 1 },
+        { q: 'If AQL=2.5%, a typical Pa at p=2.5% is…', options: ['≈95%', '≈50%', '≈5%'], answer: 0 },
+        { q: 'Poisson approximation is most suitable for…', options: ['Small n, high p', 'Large n, small p', 'Any case'], answer: 1 },
+        { q: 'Key parameters for Hypergeometric are…', options: ['N, n, c, p', 'n, c, p', 'N, p'], answer: 0 },
+        { q: 'Are AQL dots shown in the legend on Comparison?', options: ['Shown', 'Hidden', 'Configurable'], answer: 1 },
+        { q: 'AQL marker tooltip shows…', options: ['p only', 'Pa only', 'p and Pa'], answer: 2 },
+        { q: 'Default unit for target Pa on Reverse page is…', options: ['%', 'Decimal', 'Not displayed'], answer: 0 },
+        { q: 'If n < c, the app will…', options: ['Show an error', 'Proceed normally', 'Auto-correct'], answer: 0 },
+        { q: 'Chart export buttons are located…', options: ['Left side', 'Chart toolbar', 'Footer'], answer: 1 },
+        { q: 'In Multiple Plan Comparison, newly added manual plans default to…', options: ['Hypergeometric', 'Binomial', 'Poisson'], answer: 1 },
+        { q: 'Main difference between Binomial and Hypergeometric?', options: ['With/without replacement', 'Sample size only', 'Presence of AQL'], answer: 0 },
+        { q: 'To consider lot depletion effect, choose…', options: ['Binomial', 'Hypergeometric', 'Poisson'], answer: 1 },
+        { q: 'When comparing different (n, c) plans, recommended approach?', options: ['View one curve only', 'Visualize multiple curves together', 'Rely on text'], answer: 1 },
+        { q: 'Typical acceptance probability at AQL?', options: ['50%', '80%', '95%'], answer: 2 },
+        { q: 'To tighten inspection stringency you could…', options: ['Lower n', 'Lower c or increase n', 'Do nothing'], answer: 1 },
+        { q: 'LQ commonly describes…', options: ['A consumer-risk point for bad lots', 'Average defect rate', 'Best cost'], answer: 0 },
+        { q: 'Label on the randomize button should be…', options: ['Refresh questions', 'Refresh Quiz', 'Reset quiz'], answer: 1 },
+        { q: 'If distributions differ but (n, c) are the same, OC can be…', options: ['Exactly the same', 'Slightly different', 'Not drawable'], answer: 1 },
+        { q: 'An advantage of C=0 for high-risk defects is…', options: ['Looser acceptance threshold', 'Lower consumer risk', 'Higher producer risk'], answer: 1 },
+        { q: 'Position of the AQL marker is determined by…', options: ['AQL and Pa(AQL)', 'n and c', 'N and n'], answer: 0 },
+        { q: 'After changing x-axis max in Comparison, AQL dots…', options: ['Do not update', 'Update automatically', 'Require page reload'], answer: 1 },
+        { q: 'Can the Reverse page export a plan to Comparison?', options: ['Yes', 'No', 'C=0 only'], answer: 0 },
+        { q: 'Can the AQL Lookup page export a plan?', options: ['Yes', 'No', 'Hypergeometric only'], answer: 0 }
+    ];
+
+    function shuffleArray(arr){ for (let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+    function renderRandomQuiz(count=6){
+        const container = document.getElementById('tutorial-quiz-container'); if (!container) return;
+        container.innerHTML = '';
+        const picked = shuffleArray([...quizQuestionBank]).slice(0, Math.max(5, count));
+        picked.forEach((item, idx)=>{
+            const wrap = document.createElement('div'); wrap.className = 'tutorial-quiz';
+            const q = document.createElement('p'); q.innerHTML = `<strong>Question ${idx+1}:</strong> ${item.q}`; wrap.appendChild(q);
+            item.options.forEach((opt, i)=>{
+                const div = document.createElement('div'); div.className='tutorial-quiz-option'; div.setAttribute('data-correct', String(i===item.answer)); div.textContent = opt; wrap.appendChild(div);
+            });
+            container.appendChild(wrap);
+        });
+        // Attach option handlers
+        setTimeout(()=>{
+            container.querySelectorAll('.tutorial-quiz-option').forEach(option => {
+                option.addEventListener('click', function(){
+                    const isCorrect = this.getAttribute('data-correct') === 'true';
+                    this.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    const quiz = this.closest('.tutorial-quiz');
+                    quiz.querySelectorAll('.tutorial-quiz-option').forEach(opt => { if (opt !== this) opt.style.pointerEvents = 'none'; });
+                    if (isCorrect) { this.innerHTML += ' ✅ Correct'; }
+                    else {
+                        this.innerHTML += ' ❌ Try again!';
+                        setTimeout(()=>{ const correct = quiz.querySelector('[data-correct="true"]'); if (correct){ correct.classList.add('correct'); correct.innerHTML += ' ✅ This is correct!'; } }, 600);
+                    }
+                });
+            });
+        }, 50);
+    }
 
     let currentTutorialStep = 0;
     let tutorialActive = false;
@@ -2797,34 +2954,14 @@
             tutorialHighlight.style.display = 'none';
         }
         
-        // Handle quiz interactions
-        if (step.content.includes('tutorial-quiz')) {
-            setTimeout(() => {
-                document.querySelectorAll('.tutorial-quiz-option').forEach(option => {
-                    option.addEventListener('click', function() {
-                        const isCorrect = this.getAttribute('data-correct') === 'true';
-                        this.classList.add(isCorrect ? 'correct' : 'incorrect');
-                        
-                        // Disable other options in the same quiz
-                        const quiz = this.closest('.tutorial-quiz');
-                        quiz.querySelectorAll('.tutorial-quiz-option').forEach(opt => {
-                            if (opt !== this) opt.style.pointerEvents = 'none';
-                        });
-                        
-                        // Show feedback
-                        if (isCorrect) {
-                            this.innerHTML += ' ✅ Correct!';
-                        } else {
-                            this.innerHTML += ' ❌ Try again!';
-                            // Show correct answer
-                            setTimeout(() => {
-                                quiz.querySelector('[data-correct="true"]').classList.add('correct');
-                                quiz.querySelector('[data-correct="true"]').innerHTML += ' ✅ This is correct!';
-                            }, 1000);
-                        }
-                    });
-                });
-            }, 100);
+        // Handle quiz rendering and interactions
+        if (step.isQuiz) {
+            // Render random quiz set and bind refresh
+            setTimeout(()=>{
+                renderRandomQuiz(6);
+                const btn = document.getElementById('quiz-refresh-btn');
+                if (btn){ btn.onclick = function(){ renderRandomQuiz(6); } }
+            }, 50);
         }
     }
 
