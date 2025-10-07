@@ -1085,9 +1085,9 @@
                             <div class="group"><label>Rejection No. (Re)</label><input id="ss_result_re" type="text" value="-" disabled></div>
                             <div class="group"><label>Inspection</label><input id="ss_result_state" type="text" value="Normal" disabled></div>
                             <div class="group" style="grid-column: 1 / span 2;"><label>Notes</label><input id="ss_result_note" type="text" value="-" disabled></div>
-                            <div class="group"><label>P(Accept at AQL)</label><input id="ss_result_pa" type="text" value="-" disabled></div>
-                            <div class="group"><label>P(Reject at AQL)</label><input id="ss_result_prej" type="text" value="-" disabled></div>
-                            <div class="group" style="grid-column: 1 / span 2;"><label>P(Continue at AQL)</label><input id="ss_result_pcont" type="text" value="-" disabled></div>
+                            <div class="group"><label>Pa (Accept at AQL)</label><input id="ss_result_pa" type="text" value="-" disabled></div>
+                            <div class="group"><label>Pr (Reject at AQL)</label><input id="ss_result_prej" type="text" value="-" disabled></div>
+                            <div class="group" style="grid-column: 1 / span 2;"><label>Pc (Continue at AQL)</label><input id="ss_result_pcont" type="text" value="-" disabled></div>
                         </div>
                     </div>
                 </aside>
@@ -1416,7 +1416,22 @@
             responsive: true,
             maintainAspectRatio: false,
             animation: false,
-            plugins: { legend: { position: 'top', labels: { color: getThemeColors().text } } },
+            plugins: { 
+                legend: { position: 'top', labels: { color: getThemeColors().text } },
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        label: function(context) {
+                            const x = context.parsed && context.parsed.x;
+                            const y = context.parsed && context.parsed.y;
+                            const datasetLabel = context.dataset.label || '';
+                            const xText = (isFinite(x) ? (+x).toFixed(x < 1 ? 3 : 2) : '-');
+                            const yText = (isFinite(y) ? (y * 100).toFixed(1) : '-');
+                            return `${datasetLabel}: p=${xText}%, Pa=${yText}%`;
+                        }
+                    }
+                }
+            },
             scales: {
                 x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, max: xMaxInit, grid: { color: getThemeColors().grid } },
                 y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
@@ -1583,17 +1598,24 @@
         var yTicks = { callback: function(v){ return (v*100).toFixed(0)+'%'; } };
         var yScale = { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: yTicks, grid: { color: getThemeColors().grid } };
         var scales = { x: xScale, y: yScale };
-        // crosshair and tooltip: enable tooltip only for AQL scatter markers
+        // crosshair and tooltip: enable tooltip for all datasets
         plugins.tooltip = {
             enabled: true,
-            filter: function(context){ return context.dataset && context.dataset.type==='scatter'; },
             callbacks: {
                 label: function(context){
                     var x = context.parsed && context.parsed.x; var y = context.parsed && context.parsed.y;
-                    var base = (context.dataset && (context.dataset._aqlLabel || context.dataset.label)) || 'AQL';
+                    var datasetLabel = context.dataset.label || '';
                     var xTxt = (isFinite(x)?(+x).toFixed(x<1?3:2):'-');
                     var yTxt = (isFinite(y)?(y*100).toFixed(1):'-');
-                    return base+': p='+xTxt+'% , Pa='+yTxt+'%';
+                    
+                    // Special handling for AQL scatter markers
+                    if (context.dataset && context.dataset.type==='scatter') {
+                        var base = (context.dataset._aqlLabel || 'AQL');
+                        return base+': p='+xTxt+'% , Pa='+yTxt+'%';
+                    }
+                    
+                    // Regular line chart tooltip
+                    return datasetLabel+': p='+xTxt+'% , Pa='+yTxt+'%';
                 }
             }
         };
@@ -1739,6 +1761,11 @@
     if (planXMaxEl) { planXMaxEl.addEventListener('input', updatePlanChart); }
     if (planExportPngBtn) { planExportPngBtn.addEventListener('click', function(){ ensurePlanChart(); exportChartHiRes(planChart, 'plan_comparison'); }); }
     if (planExportCsvBtn) { planExportCsvBtn.addEventListener('click', function(){ ensurePlanChart(); var csv='label,x_defect_rate_percent,y_acceptance_prob\n'; for (var di=0; di<planChart.data.datasets.length; di++){ var ds=planChart.data.datasets[di]; if (ds.type==='scatter') continue; for (var pi=0; pi<ds.data.length; pi++){ var p=ds.data[pi]; csv += ds.label+','+p.x+','+p.y+'\n'; } } var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='plan_comparison.csv'; a.click(); URL.revokeObjectURL(url); }); }
+    // Initialize plan chart on page load to ensure tooltip works
+    if (planCtx) {
+        ensurePlanChart();
+    }
+    
     if (planImportBtn) { planImportBtn.addEventListener('click', function(){
         var queue = window.planComparisonQueue || [];
         if (!Array.isArray(queue) || queue.length===0) { alert('No exported plans found. Use Export to Plan Comparison on other pages first.'); return; }
@@ -1783,7 +1810,22 @@
         revChart = new Chart(revCtx, {
             type: 'line', data: { datasets: [] }, options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
-                plugins: { legend: { display: true, labels: { color: getThemeColors().text } } },
+                plugins: { 
+                    legend: { display: true, labels: { color: getThemeColors().text } },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                const x = context.parsed && context.parsed.x;
+                                const y = context.parsed && context.parsed.y;
+                                const datasetLabel = context.dataset.label || '';
+                                const xText = (isFinite(x) ? (+x).toFixed(x < 1 ? 3 : 2) : '-');
+                                const yText = (isFinite(y) ? (y * 100).toFixed(1) : '-');
+                                return `${datasetLabel}: p=${xText}%, Pa=${yText}%`;
+                            }
+                        }
+                    }
+                },
                 scales: {
                     x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, grid: { color: getThemeColors().grid } },
                     y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
@@ -2131,7 +2173,22 @@
         c0Chart = new Chart(c0Ctx, {
             type: 'line', data: { datasets: [] }, options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
-                plugins: { legend: { display: true, labels: { color: getThemeColors().text } } },
+                plugins: { 
+                    legend: { display: true, labels: { color: getThemeColors().text } },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                const x = context.parsed && context.parsed.x;
+                                const y = context.parsed && context.parsed.y;
+                                const datasetLabel = context.dataset.label || '';
+                                const xText = (isFinite(x) ? (+x).toFixed(x < 1 ? 3 : 2) : '-');
+                                const yText = (isFinite(y) ? (y * 100).toFixed(1) : '-');
+                                return `${datasetLabel}: p=${xText}%, Pa=${yText}%`;
+                            }
+                        }
+                    }
+                },
                 scales: {
                     x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, grid: { color: getThemeColors().grid } },
                     y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
@@ -2348,7 +2405,22 @@
     function ensureSsChart() {
         if (ssChart) return ssChart;
         ssChart = new Chart(ssCtx, { type:'line', data:{datasets:[]}, options:{ responsive:true, maintainAspectRatio:false, animation:false,
-            plugins:{ legend:{ display:true, labels:{ color: getThemeColors().text } } },
+            plugins:{ 
+                legend:{ display:true, labels:{ color: getThemeColors().text } },
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        label: function(context) {
+                            const x = context.parsed && context.parsed.x;
+                            const y = context.parsed && context.parsed.y;
+                            const datasetLabel = context.dataset.label || '';
+                            const xText = (isFinite(x) ? (+x).toFixed(x < 1 ? 3 : 2) : '-');
+                            const yText = (isFinite(y) ? (y * 100).toFixed(1) : '-');
+                            return `${datasetLabel}: p=${xText}%, Probability=${yText}%`;
+                        }
+                    }
+                }
+            },
             scales:{ x:{ type:'linear', title:{ display:true, text:'Defect Rate (p%)' }, grid:{ color: getThemeColors().grid } },
                     y:{ min:0, max:1, title:{ display:true, text:'Probability' }, ticks:{ callback:function(v){ return (v*100).toFixed(0)+'%'; } }, grid:{ color: getThemeColors().grid } } }
         }});
@@ -2431,17 +2503,17 @@
         const re = (typeof ssLastPlan?.re==='number') ? ssLastPlan.re : (c!=null?c+1:null);
         for (let i=0;i<xs.length;i++){
             const px = xs[i]; const p = px/100;
-            const pa = ssComputePa(dist, N, n, c, p);
-            let pr;
+            const Pa = ssComputePa(dist, N, n, c, p);
+            let Pr;
             if (re!=null && re>c) {
                 const cdfReMinus1 = ssComputePa(dist, N, n, re-1, p);
-                pr = Math.max(0, 1 - cdfReMinus1);
+                Pr = Math.max(0, 1 - cdfReMinus1);
             } else {
-                pr = Math.max(0, 1 - pa);
+                Pr = Math.max(0, 1 - Pa);
             }
-            paData.push({x:px,y:pa});
-            prData.push({x:px,y:pr});
-            upperData.push({x:px,y:Math.max(0, 1 - pr)}); // Pa + Pc
+            paData.push({x:px,y:Pa});
+            prData.push({x:px,y:Pr});
+            upperData.push({x:px,y:Math.max(0, 1 - Pr)}); // Pa + Pc
         }
         ssChart.data.datasets = [
             { label:`Accept (Pa)  n=${n}, c=${c}, AQL=${aql}, Code=${code}, Level=${level}`, data:paData, borderColor:acceptColor, backgroundColor:'transparent', borderWidth:2, pointRadius:0, tension:0.1 },
@@ -2474,17 +2546,22 @@
         const dist = ssDistSel.value;
         // compute tri-state at AQL for reduced
         const p = parseFloat(aqlStr)/100;
-        const pa = ssComputePa(dist, N, n, c, p);
-        let prej = 0, pcont = 0;
+        const Pa = ssComputePa(dist, N, n, c, p);
+        let Pr = 0, Pc = 0;
         if (ssStateSel.value==='reduced' && re!=null && re>c) {
             // P(reject) = P[X >= Re] = 1 - P[X <= Re-1]
             const cdfReMinus1 = ssComputePa(dist, N, n, re-1, p);
-            prej = Math.max(0, 1 - cdfReMinus1);
-            pcont = Math.max(0, 1 - pa - prej);
+            Pr = Math.max(0, 1 - cdfReMinus1);
+            Pc = Math.max(0, 1 - Pa - Pr);
+        } else {
+            // For normal and tightened inspection, only accept/reject
+            // P(reject) = 1 - P(accept)
+            Pr = Math.max(0, 1 - Pa);
+            Pc = 0; // No continue state for normal/tightened
         }
-        const paEl = document.getElementById('ss_result_pa'); if (paEl) paEl.value = (pa*100).toFixed(2)+'%';
-        const prEl = document.getElementById('ss_result_prej'); if (prEl) prEl.value = (prej*100).toFixed(2)+'%';
-        const pcEl = document.getElementById('ss_result_pcont'); if (pcEl) pcEl.value = (pcont*100).toFixed(2)+'%';
+        const paEl = document.getElementById('ss_result_pa'); if (paEl) paEl.value = (Pa*100).toFixed(2)+'%';
+        const prEl = document.getElementById('ss_result_prej'); if (prEl) prEl.value = (Pr*100).toFixed(2)+'%';
+        const pcEl = document.getElementById('ss_result_pcont'); if (pcEl) pcEl.value = (Pc*100).toFixed(2)+'%';
         
         // Check if n >= N (全檢的情況)
         if (n >= N) {
