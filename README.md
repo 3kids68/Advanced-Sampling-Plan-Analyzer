@@ -22,6 +22,8 @@ A single‑page, front‑end web app for designing, looking up, and visualizing 
 - `requirements/`: Page specs and algorithm details (`aql_ltpd_balanced_plan.md`, `aql_plan_table_lookup.md`, `c0_plan_table_lookup.md`, `efficiency_analysis_system.md`).
 - `background_info/`: AOQ/ATI PDFs and related background materials.
 
+See `requirements/ui_design_standards.md` for consolidated UI rules (left sidebar tabs, 4:3 chart sizing with fixed height, button sizing/radius, export button placement, and active-tab hover parity).
+
 ### Quick Start (Local)
 This is a static front‑end app—no dependencies to install.
 1. Open `Advanced_Sampling_Plan_Analyzer_251008.html` directly in your browser, or
@@ -58,6 +60,54 @@ This is a static front‑end app—no dependencies to install.
 ### Changelog (highlights)
 - 2025‑01: Dynamic efficiency formula, tutorial integration, numerical stability and search convergence improvements.
 - 2025‑10: AQL table page adds Normal/Reduced/Tightened states, dual cursor interactions, and high‑quality export refinements.
+ - 2025‑10‑08: Unified theme bindings for all charts (legend, titles, ticks, grid, axis borders). Fixed light/dark inconsistencies on C=0 and AQL‑LTPD pages by updating the global theme updater to include `c0Chart` and `aqlLtpdChart`. Added UI standards §12.8.2/§12.8.3 and light‑theme tab contrast rule §9.6.3.
 
 ### License / Use
 For educational and research use only. For commercial use or derivative works, please contact the author first.
+
+### Rebuild Guide (from requirements + master tables)
+
+This app can be fully reconstructed using only the specs in `requirements/` and data in `master tables/`. Follow this mapping:
+
+1) UI & Layout
+- Source: `requirements/ui_design_standards.md`
+- Key directives:
+  - Left sidebar navigation (`sidebar`) with vertical `.tab` buttons (width 100%, centered, no-wrap)
+  - Main content width unchanged; expand outer container to include sidebar
+  - Chart area keeps fixed height; width adapts to maintain 4:3 and centers horizontally
+  - Buttons: ~1.5× height (`.btn` padding 18px), small radius (8px); `.tab.active:hover` = `.tab:hover`
+
+2) AQL–LTPD Balanced Plan page
+- Spec: `requirements/aql_ltpd_balanced_plan.md`
+- Implements optimization to recommend `(n, c)` with efficiency scoring, AOQL/ASN, and OC curve
+
+3) AQL Plan Table Lookup (ANSI/ASQ Z1.4)
+- Spec: `requirements/aql_plan_table_lookup.md`
+- Data: `master tables/CodeLetterTable.js`, `normal.js`, `reduced.js`, `tightened.js`
+
+4) C=0 Plan Lookup
+- Spec: `requirements/c0_plan_table_lookup.md`
+- Data: `master tables/c=0 table.js`
+
+5) Multiple Plan Comparison
+- Spec: `requirements/multiple_plan_comparison.md`
+- Accepts exports from other pages and renders OC/AOQ/ATI curves
+
+6) Reverse Sampling Query
+- Spec: `requirements/reverse_sampling_query.md`
+
+7) Efficiency Analysis System
+- Spec: `requirements/efficiency_analysis_system.md`
+
+8) Charting
+- Library: Chart.js (CDN). Use `maintainAspectRatio: false`; layout ratio is controlled by CSS (see 1).
+
+9) Exports
+- PNG/CSV per page spec; typical CSV headers are listed in each page’s requirements file.
+
+Bootstrapping steps:
+1. Create base HTML skeleton with `sidebar` + `pages` layout as in UI standards.
+2. Implement each page per its `requirements/*.md` file, wiring inputs, outputs, and event handlers.
+3. Load data sources from `master tables/` and build lookup functions.
+4. Initialize charts with theme-aware colors; set CSS for 4:3 chart width with fixed height.
+5. Wire exports (PNG/CSV) and plan export to comparison page.
