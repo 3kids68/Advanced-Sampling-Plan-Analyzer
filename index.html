@@ -232,7 +232,7 @@
     }
 
     /* Ensure tabs fill sidebar width and content width remains unchanged by adding sidebar width to container */
-    .tabs .tab { width: 100%; }
+    .tabs .tab { width: 100%; display: flex; align-items: center; justify-content: center; }
     .app { max-width: calc(1200px + 260px + 16px); }
     
     .tab::before {
@@ -372,7 +372,7 @@
     }
 
     /* Page header card */
-    .page-header { background: var(--card); color: var(--card-text); border-radius: 10px; padding: 16px 18px; margin: 8px 0 14px 0; }
+    .page-header { background: var(--card); color: var(--card-text); border-radius: 10px; padding: 16px 18px; margin: 8px 0 14px 0; text-align: center; }
     .page-header h2 { margin: 0 0 6px 0; font-size: 1.35rem; }
     .page-header p { margin: 0; color: var(--card-text); opacity: 0.7; }
 
