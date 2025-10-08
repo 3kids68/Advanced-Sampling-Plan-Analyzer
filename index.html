@@ -856,6 +856,7 @@
             <div class="tab" data-target="reverse">Reverse Sampling Query</div>
             <div class="tab" data-target="kaiyi">AQL Plan Table Lookup</div>
             <div class="tab" data-target="c0">C=0 Plan Table Lookup</div>
+            <div class="tab" data-target="aql-ltpd">AQL-LTPD Balanced Plan</div>
         </nav>
 
         <!-- Distribution Page -->
@@ -945,6 +946,11 @@
                         <div class="btn-row">
                             <button class="btn primary" id="add-plan-btn">Add Plan</button>
                             <button class="btn" id="clear-all-btn">Clear All</button>
+                        </div>
+                        <div class="btn-row" style="margin-top: 8px;">
+                            <button class="btn" id="show-oc-btn">Show OC Curves</button>
+                            <button class="btn" id="show-aoq-btn">Show AOQ Curves</button>
+                            <button class="btn" id="show-ati-btn">Show ATI Curves</button>
                         </div>
                     </div>
                     <div class="panel">
@@ -1145,7 +1151,7 @@
                             <div class="group"><label>Acceptance No. (c)</label><input id="c0_result_c" type="text" value="0" disabled></div>
                             <div class="group"><label>Used AQL</label><input id="c0_result_aql" type="text" value="-" disabled></div>
                             <div class="group"><label>Lot Range</label><input id="c0_result_lot_range" type="text" value="-" disabled></div>
-                            <div class="group" style="grid-column: 1 / span 2;"><label>LQ at Pa=10%</label><input id="c0_result_lq10" type="text" value="-" disabled></div>
+                            <div class="group" style="grid-column: 1 / span 2;"><label>LTPD at Pa=10%</label><input id="c0_result_lq10" type="text" value="-" disabled></div>
                         </div>
                     </div>
                     
@@ -1163,6 +1169,159 @@
                         </div>
                         <div class="chart">
                             <canvas id="ocChartC0"></canvas>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </section>
+        
+        <!-- AQL-LTPD Balanced Plan Page -->
+        <section id="section-aql-ltpd" class="section">
+            <div class="page-header">
+                <h2>AQL-LTPD Balanced Sampling Plan</h2>
+                <p>Design optimal sampling plans that balance both AQL and LTPD requirements using mathematical optimization models.</p>
+            </div>
+            <div class="content">
+                <aside class="left">
+                    <div class="panel">
+                        <h3>Input Parameters</h3>
+                        <div class="parameters">
+                            <div class="group">
+                                <label>AQL (%)</label>
+                                <input id="aql_ltpd_aql_input" type="number" value="1.0" step="0.01" min="0.01" max="10.0">
+                            </div>
+                            <div class="group">
+                                <label>LTPD (%)</label>
+                                <input id="aql_ltpd_ltpd_input" type="number" value="5.0" step="0.1" min="0.1" max="50.0">
+                            </div>
+                            <div class="group">
+                                <label>Lot Size (N)</label>
+                                <input id="aql_ltpd_lot_size" type="number" value="1000" min="1">
+                            </div>
+                            <div class="group">
+                                <label>Distribution</label>
+                                <select id="aql_ltpd_dist_select">
+                                    <option value="binom" selected>Binomial</option>
+                                    <option value="pois">Poisson</option>
+                                    <option value="hyper">Hypergeometric</option>
+                                </select>
+                            </div>
+                            <div class="group">
+                                <label>Optimization Target</label>
+                                <select id="aql_ltpd_optimization">
+                                    <option value="minimize_n" selected>Minimize Sample Size</option>
+                                    <option value="balance">Balance AQL-LTPD</option>
+                                    <option value="max_producer">Maximize Producer Protection</option>
+                                    <option value="max_consumer">Maximize Consumer Protection</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel">
+                        <h3>Risk Constraints</h3>
+                        <div class="parameters">
+                            <div class="group">
+                                <label>Producer's Risk (α)</label>
+                                <input id="aql_ltpd_alpha" type="number" value="0.05" step="0.01" min="0.01" max="0.20">
+                            </div>
+                            <div class="group">
+                                <label>Consumer's Risk (β)</label>
+                                <input id="aql_ltpd_beta" type="number" value="0.10" step="0.01" min="0.01" max="0.20">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel">
+                        <h3>Actions</h3>
+                        <div class="btn-row">
+                            <button class="btn primary" id="aql_ltpd_calculate_btn">Calculate Plan</button>
+                            <button class="btn" id="aql_ltpd_clear_btn">Clear</button>
+                        </div>
+                        <div id="aql_ltpd_error" class="error-text"></div>
+                    </div>
+                    
+                    <div class="panel">
+                        <h3>Recommended Plan</h3>
+                        <div class="parameters" style="grid-template-columns: 1fr 1fr;">
+                            <div class="group">
+                                <label>Sample Size (n)</label>
+                                <input id="aql_ltpd_result_n" type="text" value="-" disabled>
+                            </div>
+                            <div class="group">
+                                <label>Acceptance No. (c)</label>
+                                <input id="aql_ltpd_result_c" type="text" value="-" disabled>
+                            </div>
+                            <div class="group" style="grid-column: 1 / span 2;">
+                                <label>Plan Efficiency (E = 1 - |Pa_AQL - (1-α)| - |Pa_LTPD - β| - penalty)</label>
+                                <input id="aql_ltpd_efficiency" type="text" value="-" disabled>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel">
+                        <h3>Performance Metrics</h3>
+                        <div class="parameters">
+                            <div class="group">
+                                <label>Pa at AQL</label>
+                                <input id="aql_ltpd_aql_pa" type="text" value="-" disabled>
+                            </div>
+                            <div class="group">
+                                <label>Pa at LTPD</label>
+                                <input id="aql_ltpd_ltpd_pa" type="text" value="-" disabled>
+                            </div>
+                            <div class="group">
+                                <label>Actual α</label>
+                                <input id="aql_ltpd_actual_alpha" type="text" value="-" disabled>
+                            </div>
+                            <div class="group">
+                                <label>Actual β</label>
+                                <input id="aql_ltpd_actual_beta" type="text" value="-" disabled>
+                            </div>
+                            <div class="group">
+                                <label>AOQL (%)</label>
+                                <input id="aql_ltpd_aoql" type="text" value="-" disabled>
+                            </div>
+                            <div class="group">
+                                <label>ASN</label>
+                                <input id="aql_ltpd_asn" type="text" value="-" disabled>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel">
+                        <h3>Efficiency Rating & Recommendations</h3>
+                        <div class="parameters" style="grid-template-columns: 1fr;">
+                            <div class="group" style="grid-column: 1 / span 1;">
+                                <label>Efficiency Rating</label>
+                                <input id="aql_ltpd_efficiency_rating" type="text" value="-" disabled>
+                            </div>
+                            <div class="group" style="grid-column: 1 / span 1;">
+                                <label>Improvement Suggestions</label>
+                                <textarea id="aql_ltpd_improvements" rows="4" style="width: 100%; resize: vertical;" disabled></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel">
+                        <h3>Notes</h3>
+                        <div id="aql_ltpd_notes" class="notes-text">Enter AQL and LTPD values to calculate the optimal sampling plan.</div>
+                    </div>
+                </aside>
+                
+                <main class="right">
+                    <div class="chart-card">
+                        <div class="chart-toolbar">
+                            <button class="btn" id="aql_ltpd_export_png_toolbar">Export PNG</button>
+                            <button class="btn" id="aql_ltpd_export_csv_toolbar">Export Data</button>
+                            <button class="btn" id="aql_ltpd_export_plan">Export to Plan Comparison</button>
+                            <div style="margin-left:auto" class="btn-row">
+                                <label style="color:var(--text); font-size:0.9em;">Defect Rate Max (%)</label>
+                                <input id="aql_ltpd_x_max" type="number" value="10" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
+                            </div>
+                        </div>
+                        <div class="chart">
+                            <canvas id="ocChartAQL_LTPD"></canvas>
                         </div>
                     </div>
                 </main>
@@ -1394,7 +1553,8 @@
         plan: document.getElementById('section-plan'),
         reverse: document.getElementById('section-reverse'),
         kaiyi: document.getElementById('section-kaiyi'),
-        c0: document.getElementById('section-c0')
+        c0: document.getElementById('section-c0'),
+        'aql-ltpd': document.getElementById('section-aql-ltpd')
     };
     tabEls.forEach(t => t.addEventListener('click', () => {
         tabEls.forEach(z => z.classList.remove('active'));
@@ -1409,6 +1569,50 @@
     // ===== Distribution page functionality =====
     const ctx = document.getElementById('ocChart').getContext('2d');
     const xMaxInit = parseFloat((document.getElementById('x_max')?.value) || '5');
+    // Crosshair plugin for OC curves
+    const ocCrosshairPlugin = {
+        id: 'ocCrosshairPlugin',
+        afterEvent: function(chart, args){
+            const e = args.event; if (!e) return;
+            chart._crosshair = chart._crosshair || { x: null, y: null };
+            if (e.type==='mousemove'){ chart._crosshair.x = e.x; chart._crosshair.y = e.y; chart.draw(); }
+            if (e.type==='mouseout'){ chart._crosshair.x = null; chart._crosshair.y = null; chart.draw(); }
+        },
+        afterDraw: function(chart){
+            const cx = chart._crosshair && chart._crosshair.x; const cy = chart._crosshair && chart._crosshair.y;
+            if (cx==null || cy==null) return;
+            const ctx = chart.ctx; const area = chart.chartArea; if (!area) return;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(199,202,207,0.5)';
+            ctx.setLineDash([4,4]);
+            // vertical line
+            ctx.beginPath(); ctx.moveTo(cx, area.top); ctx.lineTo(cx, area.bottom); ctx.stroke();
+            // horizontal line
+            ctx.beginPath(); ctx.moveTo(area.left, cy); ctx.lineTo(area.right, cy); ctx.stroke();
+            // read scale values
+            const xScaleRef = chart.scales && chart.scales.x; const yScaleRef = chart.scales && chart.scales.y;
+            if (xScaleRef && yScaleRef){
+                const xVal = xScaleRef.getValueForPixel(cx);
+                const yVal = yScaleRef.getValueForPixel(cy);
+                if (isFinite(xVal) && isFinite(yVal)){
+                    const xTxt = xVal.toFixed(2) + '%';
+                    const yTxt = (yVal*100).toFixed(1) + '%';
+                    const label = 'p=' + xTxt + ' , Pa=' + yTxt;
+                    ctx.fillStyle = 'rgba(28,42,54,0.9)'; ctx.strokeStyle='rgba(64,84,102,0.9)';
+                    ctx.setLineDash([]);
+                    const pad = 6; ctx.font = '12px sans-serif';
+                    const w = ctx.measureText(label).width + pad*2; const h = 20;
+                    const bx = Math.min(Math.max(area.left, cx+8), area.right - w);
+                    const by = Math.max(area.top, cy - h - 8);
+                    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, w, h, 6) : ctx.rect(bx, by, w, h);
+                    ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#e6e9ee'; ctx.fillText(label, bx+pad, by+14);
+                }
+            }
+            ctx.restore();
+        }
+    };
+
     const ocChart = new Chart(ctx, {
         type: 'line',
         data: { datasets: [] },
@@ -1436,7 +1640,8 @@
                 x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, max: xMaxInit, grid: { color: getThemeColors().grid } },
                 y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
             }
-        }
+        },
+        plugins: [ocCrosshairPlugin]
     });
 
     const distLotSizeEl = document.getElementById('dist_lot_size');
@@ -1474,16 +1679,19 @@
     }
 
     function getPaBinomial(n, c, p) {
-        return jStat.binomial.cdf(c, n, p);
+        const result = jStat.binomial.cdf(c, n, p);
+        return validateAcceptanceProbability(result, `getPaBinomial(n=${n}, c=${c}, p=${p})`);
     }
     function getPaPoisson(n, c, p) {
         const lambda = n * p;
-        return jStat.poisson.cdf(c, lambda);
+        const result = jStat.poisson.cdf(c, lambda);
+        return validateAcceptanceProbability(result, `getPaPoisson(n=${n}, c=${c}, p=${p})`);
     }
     function getPaHyper(N, n, c, p) {
         const m = Math.round(N * p); // number of defectives in lot
         // jStat.hypgeom.cdf(k, N, m, n) gives P(X <= k)
-        return jStat.hypgeom.cdf(c, N, m, n);
+        const result = jStat.hypgeom.cdf(c, N, m, n);
+        return validateAcceptanceProbability(result, `getPaHyper(N=${N}, n=${n}, c=${c}, p=${p})`);
     }
 
     function updateDistributionChart() {
@@ -1589,6 +1797,7 @@
     const planColors = ['#1783FF','#2ecc71','#f1c40f','#e74c3c','#9b59b6','#1abc9c','#e67e22','#95a5a6'];
     let planCounter = 1;
     let samplingPlans = [];
+    let currentCurveType = 'oc'; // Track current curve type
 
     function ensurePlanChart(){
         if (planChart) return planChart;
@@ -1606,22 +1815,47 @@
                     var x = context.parsed && context.parsed.x; var y = context.parsed && context.parsed.y;
                     var datasetLabel = context.dataset.label || '';
                     var xTxt = (isFinite(x)?(+x).toFixed(x<1?3:2):'-');
-                    var yTxt = (isFinite(y)?(y*100).toFixed(1):'-');
+                    
+                    // Format y value based on current curve type
+                    var yTxt;
+                    if (currentCurveType === 'aoq') {
+                        // AOQ is already in percentage format
+                        yTxt = (isFinite(y)?y.toFixed(2):'-') + '%';
+                    } else if (currentCurveType === 'ati') {
+                        // ATI is in actual count, no percentage
+                        yTxt = (isFinite(y)?y.toFixed(0):'-');
+                    } else {
+                        // OC curve: convert from 0-1 to percentage
+                        yTxt = (isFinite(y)?(y*100).toFixed(1):'-') + '%';
+                    }
                     
                     // Special handling for AQL scatter markers
                     if (context.dataset && context.dataset.type==='scatter') {
                         var base = (context.dataset._aqlLabel || 'AQL');
-                        return base+': p='+xTxt+'% , Pa='+yTxt+'%';
+                        var yLabel = 'Pa';
+                        if (currentCurveType === 'aoq') {
+                            yLabel = 'AOQ';
+                        } else if (currentCurveType === 'ati') {
+                            yLabel = 'ATI';
+                        }
+                        return base+': p='+xTxt+'% , '+yLabel+'='+yTxt;
                     }
                     
                     // Regular line chart tooltip
-                    return datasetLabel+': p='+xTxt+'% , Pa='+yTxt+'%';
+                    var yLabel = 'y';
+                    if (currentCurveType === 'aoq') {
+                        yLabel = 'AOQ';
+                    } else if (currentCurveType === 'ati') {
+                        yLabel = 'ATI';
+                    } else {
+                        yLabel = 'Pa';
+                    }
+                    return datasetLabel+': p='+xTxt+'% , '+yLabel+'='+yTxt;
                 }
             }
         };
         var options = { responsive: true, maintainAspectRatio: false, animation: false, plugins: plugins, scales: scales };
         var data = { datasets: [] };
-        planChart = new Chart(planCtx, { type: 'line', data: data, options: options });
         // custom crosshair plugin
         var crosshairPlugin = {
             id: 'crosshairPlugin',
@@ -1648,7 +1882,22 @@
                     var xVal = xScaleRef.getValueForPixel(cx);
                     var yVal = yScaleRef.getValueForPixel(cy);
                     if (isFinite(xVal) && isFinite(yVal)){
-                        var label = 'p='+xVal.toFixed(2)+'% , Pa='+(yVal*100).toFixed(1)+'%';
+                        // Format label based on current curve type
+                        var xTxt = xVal.toFixed(2) + '%';
+                        var yTxt, yLabel;
+                        
+                        if (currentCurveType === 'aoq') {
+                            yLabel = 'AOQ';
+                            yTxt = yVal.toFixed(2) + '%';
+                        } else if (currentCurveType === 'ati') {
+                            yLabel = 'ATI';
+                            yTxt = yVal.toFixed(0);
+                        } else {
+                            yLabel = 'Pa';
+                            yTxt = (yVal*100).toFixed(1) + '%';
+                        }
+                        
+                        var label = 'p=' + xTxt + ' , ' + yLabel + '=' + yTxt;
                         ctx.fillStyle = 'rgba(28,42,54,0.9)'; ctx.strokeStyle='rgba(64,84,102,0.9)';
                         ctx.setLineDash([]);
                         var pad = 6; ctx.font = '12px sans-serif';
@@ -1663,7 +1912,8 @@
                 ctx.restore();
             }
         };
-        Chart.register(crosshairPlugin);
+        // Create the comparison chart with an instance-scoped crosshair plugin
+        planChart = new Chart(planCtx, { type: 'line', data: data, options: options, plugins: [crosshairPlugin] });
         return planChart;
     }
     function genPValues(maxX){
@@ -1673,21 +1923,48 @@
     }
     // Unified probability calculation function, selects correct calculation method based on distribution type
     function computePlanPa(dist, N, n, c, p) {
-        if (dist === 'binom') return jStat.binomial.cdf(c, n, p);
-        if (dist === 'pois') return jStat.poisson.cdf(c, n * p);
-        if (dist === 'hyper') {
+        let result;
+        if (dist === 'binom') result = jStat.binomial.cdf(c, n, p);
+        else if (dist === 'pois') result = jStat.poisson.cdf(c, n * p);
+        else if (dist === 'hyper') {
             const m = Math.round(N * p);
-            return jStat.hypgeom.cdf(c, N, m, n);
+            result = jStat.hypgeom.cdf(c, N, m, n);
+        } else {
+            // Default to binomial distribution (backward compatibility)
+            result = jStat.binomial.cdf(c, n, p);
         }
-        // Default to binomial distribution (backward compatibility)
-        return jStat.binomial.cdf(c, n, p);
+        return validateAcceptanceProbability(result, `computePlanPa(dist=${dist}, N=${N}, n=${n}, c=${c}, p=${p})`);
     }
     
-    function updatePlanChart(){
+    function updatePlanChart(curveType = 'oc'){
         if (!planCtx) return; ensurePlanChart();
+        // Update current curve type
+        currentCurveType = curveType;
         var maxX = parseFloat(planXMaxEl.value||'5'); planChart.options.scales.x.max = maxX;
         var xs = genPValues(maxX);
         var datasets = [];
+        
+        // Update chart title and y-axis label based on curve type
+        if (curveType === 'aoq') {
+            planChart.options.scales.y.title.text = 'Average Outgoing Quality (AOQ%)';
+            planChart.options.scales.y.ticks.callback = function(v){ return v.toFixed(2)+'%'; };
+            // Reset Y-axis range for AOQ - will be set dynamically
+            planChart.options.scales.y.min = 0;
+            planChart.options.scales.y.max = undefined;
+        } else if (curveType === 'ati') {
+            planChart.options.scales.y.title.text = 'Average Total Inspection (ATI)';
+            planChart.options.scales.y.ticks.callback = function(v){ return v.toFixed(0); };
+            // Reset Y-axis range for ATI - will be set dynamically
+            planChart.options.scales.y.min = 0;
+            planChart.options.scales.y.max = undefined;
+        } else {
+            planChart.options.scales.y.title.text = 'Acceptance Probability (Pa%)';
+            planChart.options.scales.y.ticks.callback = function(v){ return (v*100).toFixed(0)+'%'; };
+            // Reset Y-axis range for OC curves
+            planChart.options.scales.y.min = 0;
+            planChart.options.scales.y.max = 1;
+        }
+        
         for (var idx=0; idx<samplingPlans.length; idx++){
             var plan = samplingPlans[idx];
             var color = plan.color || planColors[idx % planColors.length];
@@ -1695,13 +1972,42 @@
             // Use correct distribution type and parameters
             var dist = plan.dist || 'binom'; // Default binomial distribution
             var N = plan.N || 10000; // Default large lot size
+            
             for (var j=0;j<xs.length;j++){ 
                 var px = xs[j]; 
-                data.push({ x:px, y: computePlanPa(dist, N, plan.n, plan.c, px/100) }); 
+                var pa = computePlanPa(dist, N, plan.n, plan.c, px/100);
+                var y;
+                
+                if (curveType === 'aoq') {
+                    // AOQ = p * Pa * (N-n)/N
+                    y = (px/100) * pa * (N - plan.n) / N * 100; // Convert to percentage
+                } else if (curveType === 'ati') {
+                    // ATI = n + (1-Pa) * (N-n)
+                    y = plan.n + (1 - pa) * (N - plan.n);
+                } else {
+                    // OC curve
+                    y = pa;
+                }
+                
+                data.push({ x:px, y: y }); 
             }
-            datasets.push({ label: plan.label, data: data, borderColor: color, backgroundColor: color+'33', borderWidth:2, pointRadius:0, tension:0.1 });
-            // Add AQL marker if available
-            if (plan.aql!=null && isFinite(+plan.aql)){
+            
+            var label = plan.label;
+            if (curveType === 'aoq') label += ' (AOQ)';
+            else if (curveType === 'ati') label += ' (ATI)';
+            
+            datasets.push({ 
+                label: label, 
+                data: data, 
+                borderColor: color, 
+                backgroundColor: color+'33', 
+                borderWidth:2, 
+                pointRadius:0, 
+                tension:0.1 
+            });
+            
+            // Add AQL marker if available (only for OC curves)
+            if (curveType === 'oc' && plan.aql!=null && isFinite(+plan.aql)){
                 var aqlX = +plan.aql; if (aqlX>=0){
                     var paAtAql = computePlanPa(dist, N, plan.n, plan.c, aqlX/100);
                     datasets.push({
@@ -1719,10 +2025,73 @@
                         _aqlLabel: 'AQL'
                     });
                 }
+            } else if (curveType === 'ati' && plan.aql!=null && isFinite(+plan.aql)){
+                // Add AQL marker for ATI curves with correct ATI value
+                var aqlX = +plan.aql; if (aqlX>=0){
+                    var paAtAql = computePlanPa(dist, N, plan.n, plan.c, aqlX/100);
+                    var atiAtAql = plan.n + (1 - paAtAql) * (N - plan.n);
+                    datasets.push({
+                        type: 'scatter',
+                        // Hide from legend; use tooltip only
+                        label: '',
+                        data: [{ x: aqlX, y: atiAtAql }],
+                        pointRadius: 5,
+                        pointHoverRadius: 6,
+                        showLine: false,
+                        borderColor: color,
+                        pointBackgroundColor: color,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1,
+                        _aqlLabel: 'AQL'
+                    });
+                }
+            } else if (curveType === 'aoq' && plan.aql!=null && isFinite(+plan.aql)){
+                // Add AQL marker for AOQ curves with correct AOQ value
+                var aqlX = +plan.aql; if (aqlX>=0){
+                    var paAtAql = computePlanPa(dist, N, plan.n, plan.c, aqlX/100);
+                    var aoqAtAql = (aqlX/100) * paAtAql * (N - plan.n) / N * 100;
+                    datasets.push({
+                        type: 'scatter',
+                        // Hide from legend; use tooltip only
+                        label: '',
+                        data: [{ x: aqlX, y: aoqAtAql }],
+                        pointRadius: 5,
+                        pointHoverRadius: 6,
+                        showLine: false,
+                        borderColor: color,
+                        pointBackgroundColor: color,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1,
+                        _aqlLabel: 'AQL'
+                    });
+                }
             }
         }
-        planChart.data.datasets = datasets; planChart.update();
+        planChart.data.datasets = datasets; 
+        
+        // Calculate and set dynamic Y-axis range for AOQ and ATI curves
+        if (curveType === 'aoq' || curveType === 'ati') {
+            var maxY = 0;
+            for (var i = 0; i < datasets.length; i++) {
+                var dataset = datasets[i];
+                for (var j = 0; j < dataset.data.length; j++) {
+                    var y = dataset.data[j].y;
+                    if (isFinite(y) && y > maxY) {
+                        maxY = y;
+                    }
+                }
+            }
+            // Add 10% padding to the maximum value
+            if (maxY > 0) {
+                planChart.options.scales.y.max = maxY * 1.1;
+            }
+        }
+        
+        planChart.update();
         renderPlanList();
+        
+        // Update button states
+        updateCurveButtons(curveType);
     }
 
     // import from global queue
@@ -1747,7 +2116,7 @@
             planListEl.appendChild(li); 
         } 
     }
-    if (planListEl) { planListEl.addEventListener('click', function(e){ var t=e.target; if (t && t.getAttribute('data-del')){ var idx=+t.getAttribute('data-del'); samplingPlans.splice(idx,1); updatePlanChart(); }}); }
+    if (planListEl) { planListEl.addEventListener('click', function(e){ var t=e.target; if (t && t.getAttribute('data-del')){ var idx=+t.getAttribute('data-del'); samplingPlans.splice(idx,1); updatePlanChart(currentCurveType); }}); }
     if (addPlanBtn) { addPlanBtn.addEventListener('click', function(){
         const n = parseInt(planNInput.value,10), c = parseInt(planCInput.value,10); const aqlStr = planAqlInput.value.trim(); const label = (planLabelInput.value.trim()||`Plan ${planCounter++}`);
         if (!(n>0) || !(c>=0) || n<c) { alert('Please enter valid n and c (n>0, c>=0, n>=c).'); return; }
@@ -1755,15 +2124,69 @@
         const color = planColors[samplingPlans.length % planColors.length];
         // Manually added plans default to binomial distribution
         samplingPlans.push({ n, c, aql, label, color, dist: 'binom', N: 10000, source: 'manual' });
-        planLabelInput.value=''; planAqlInput.value=''; updatePlanChart();
+        planLabelInput.value=''; planAqlInput.value=''; updatePlanChart(currentCurveType);
     }); }
-    if (clearAllBtn) { clearAllBtn.addEventListener('click', function(){ samplingPlans = []; planCounter=1; updatePlanChart(); }); }
-    if (planXMaxEl) { planXMaxEl.addEventListener('input', updatePlanChart); }
+    if (clearAllBtn) { clearAllBtn.addEventListener('click', function(){ samplingPlans = []; planCounter=1; updatePlanChart(currentCurveType); }); }
+    
+    // Curve type buttons
+    const showOcBtn = document.getElementById('show-oc-btn');
+    const showAoqBtn = document.getElementById('show-aoq-btn');
+    const showAtiBtn = document.getElementById('show-ati-btn');
+    
+    // Function to update button states
+    function updateCurveButtons(activeType) {
+        [showOcBtn, showAoqBtn, showAtiBtn].forEach(btn => {
+            if (btn) {
+                btn.classList.remove('primary');
+                btn.classList.add('btn');
+            }
+        });
+        
+        if (activeType === 'oc' && showOcBtn) showOcBtn.classList.add('primary');
+        else if (activeType === 'aoq' && showAoqBtn) showAoqBtn.classList.add('primary');
+        else if (activeType === 'ati' && showAtiBtn) showAtiBtn.classList.add('primary');
+    }
+    
+    if (showOcBtn) { 
+        showOcBtn.addEventListener('click', function(){ 
+            if (samplingPlans.length === 0) { 
+                alert('Please add at least one plan first.'); 
+                return; 
+            }
+            updatePlanChart('oc'); 
+            updateCurveButtons('oc');
+        }); 
+    }
+    
+    if (showAoqBtn) { 
+        showAoqBtn.addEventListener('click', function(){ 
+            if (samplingPlans.length === 0) { 
+                alert('Please add at least one plan first.'); 
+                return; 
+            }
+            updatePlanChart('aoq'); 
+            updateCurveButtons('aoq');
+        }); 
+    }
+    
+    if (showAtiBtn) { 
+        showAtiBtn.addEventListener('click', function(){ 
+            if (samplingPlans.length === 0) { 
+                alert('Please add at least one plan first.'); 
+                return; 
+            }
+            updatePlanChart('ati'); 
+            updateCurveButtons('ati');
+        }); 
+    }
+    if (planXMaxEl) { planXMaxEl.addEventListener('input', function(){ updatePlanChart(currentCurveType); }); }
     if (planExportPngBtn) { planExportPngBtn.addEventListener('click', function(){ ensurePlanChart(); exportChartHiRes(planChart, 'plan_comparison'); }); }
     if (planExportCsvBtn) { planExportCsvBtn.addEventListener('click', function(){ ensurePlanChart(); var csv='label,x_defect_rate_percent,y_acceptance_prob\n'; for (var di=0; di<planChart.data.datasets.length; di++){ var ds=planChart.data.datasets[di]; if (ds.type==='scatter') continue; for (var pi=0; pi<ds.data.length; pi++){ var p=ds.data[pi]; csv += ds.label+','+p.x+','+p.y+'\n'; } } var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='plan_comparison.csv'; a.click(); URL.revokeObjectURL(url); }); }
     // Initialize plan chart on page load to ensure tooltip works
     if (planCtx) {
         ensurePlanChart();
+        updatePlanChart('oc');
+        updateCurveButtons('oc');
     }
     
     if (planImportBtn) { planImportBtn.addEventListener('click', function(){
@@ -1784,7 +2207,7 @@
         }
         if (added===0) { alert('No valid plans in queue to import.'); return; }
         window.planComparisonQueue = [];
-        updatePlanChart();
+        updatePlanChart(currentCurveType);
         renderPlanList();
         alert('Imported '+added+' plan(s). Note: Plans from different pages may use different probability distributions (Hypergeometric/Binomial/Poisson).');
     }); }
@@ -1807,6 +2230,51 @@
 
     function ensureRevChart() {
         if (revChart) return revChart;
+        
+        // Crosshair plugin for Reverse page
+        const revCrosshairPlugin = {
+            id: 'revCrosshairPlugin',
+            afterEvent: function(chart, args){
+                const e = args.event; if (!e) return;
+                chart._crosshair = chart._crosshair || { x: null, y: null };
+                if (e.type==='mousemove'){ chart._crosshair.x = e.x; chart._crosshair.y = e.y; chart.draw(); }
+                if (e.type==='mouseout'){ chart._crosshair.x = null; chart._crosshair.y = null; chart.draw(); }
+            },
+            afterDraw: function(chart){
+                const cx = chart._crosshair && chart._crosshair.x; const cy = chart._crosshair && chart._crosshair.y;
+                if (cx==null || cy==null) return;
+                const ctx = chart.ctx; const area = chart.chartArea; if (!area) return;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(199,202,207,0.5)';
+                ctx.setLineDash([4,4]);
+                // vertical line
+                ctx.beginPath(); ctx.moveTo(cx, area.top); ctx.lineTo(cx, area.bottom); ctx.stroke();
+                // horizontal line
+                ctx.beginPath(); ctx.moveTo(area.left, cy); ctx.lineTo(area.right, cy); ctx.stroke();
+                // read scale values
+                const xScaleRef = chart.scales && chart.scales.x; const yScaleRef = chart.scales && chart.scales.y;
+                if (xScaleRef && yScaleRef){
+                    const xVal = xScaleRef.getValueForPixel(cx);
+                    const yVal = yScaleRef.getValueForPixel(cy);
+                    if (isFinite(xVal) && isFinite(yVal)){
+                        const xTxt = xVal.toFixed(2) + '%';
+                        const yTxt = (yVal*100).toFixed(1) + '%';
+                        const label = 'p=' + xTxt + ' , Pa=' + yTxt;
+                        ctx.fillStyle = 'rgba(28,42,54,0.9)'; ctx.strokeStyle='rgba(64,84,102,0.9)';
+                        ctx.setLineDash([]);
+                        const pad = 6; ctx.font = '12px sans-serif';
+                        const w = ctx.measureText(label).width + pad*2; const h = 20;
+                        const bx = Math.min(Math.max(area.left, cx+8), area.right - w);
+                        const by = Math.max(area.top, cy - h - 8);
+                        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, w, h, 6) : ctx.rect(bx, by, w, h);
+                        ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#e6e9ee'; ctx.fillText(label, bx+pad, by+14);
+                    }
+                }
+                ctx.restore();
+            }
+        };
+        
         revChart = new Chart(revCtx, {
             type: 'line', data: { datasets: [] }, options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
@@ -1830,14 +2298,20 @@
                     x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, grid: { color: getThemeColors().grid } },
                     y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
                 }
-            }
+            },
+            plugins: [revCrosshairPlugin]
         });
         return revChart;
     }
     function revComputePa(dist, N, n, c, p) {
-        if (dist==='binom') return jStat.binomial.cdf(c, n, p);
-        if (dist==='pois') return jStat.poisson.cdf(c, n*p);
-        const m = Math.round(N*p); return jStat.hypgeom.cdf(c, N, m, n);
+        let result;
+        if (dist==='binom') result = jStat.binomial.cdf(c, n, p);
+        else if (dist==='pois') result = jStat.poisson.cdf(c, n*p);
+        else {
+            const m = Math.round(N*p); 
+            result = jStat.hypgeom.cdf(c, N, m, n);
+        }
+        return validateAcceptanceProbability(result, `revComputePa(dist=${dist}, N=${N}, n=${n}, c=${c}, p=${p})`);
     }
     function revGeneratePValues(maxXPercent) {
         const step = 0.05; const num = Math.floor(maxXPercent/step)+1; return Array.from({length:num},(_,i)=>+(i*step).toFixed(2));
@@ -2112,14 +2586,27 @@
             window.planComparisonQueue = window.planComparisonQueue || [];
             var distName = revLastPlan.dist === 'hyper' ? 'Hypergeometric' : (revLastPlan.dist === 'binom' ? 'Binomial' : 'Poisson');
             var label = 'Reverse n='+revLastPlan.n+', c='+revLastPlan.c+' ('+distName+')';
+            // Calculate efficiency data for consistent rating
+            const aql = revLastPlan.aql;
+            const paAql = calculateAcceptanceProbability(revLastPlan.n, revLastPlan.c, aql / 100, revLastPlan.N, revLastPlan.dist);
+            const ltpd = aql * 2; // Assume LTPD is 2x AQL for reverse plans
+            const paLtpd = calculateAcceptanceProbability(revLastPlan.n, revLastPlan.c, ltpd / 100, revLastPlan.N, revLastPlan.dist);
+            const actualAlpha = 1 - paAql;
+            const actualBeta = paLtpd;
+            
             window.planComparisonQueue.push({ 
                 n: revLastPlan.n, 
                 c: revLastPlan.c, 
-                aql: revLastPlan.aql, 
+                aql: aql, 
                 label: label,
                 dist: revLastPlan.dist,
                 N: revLastPlan.N,
-                source: 'reverse'
+                source: 'reverse',
+                // Include efficiency calculation data
+                paAql: paAql,
+                paLtpd: paLtpd,
+                actualAlpha: actualAlpha,
+                actualBeta: actualBeta
             });
             alert('Exported to Plan Comparison queue. Switch to Multiple Plan Comparison to import.');
         });
@@ -2170,6 +2657,51 @@
 
     function ensureC0Chart() {
         if (c0Chart) return c0Chart;
+        
+        // Crosshair plugin for C=0 page
+        const c0CrosshairPlugin = {
+            id: 'c0CrosshairPlugin',
+            afterEvent: function(chart, args){
+                const e = args.event; if (!e) return;
+                chart._crosshair = chart._crosshair || { x: null, y: null };
+                if (e.type==='mousemove'){ chart._crosshair.x = e.x; chart._crosshair.y = e.y; chart.draw(); }
+                if (e.type==='mouseout'){ chart._crosshair.x = null; chart._crosshair.y = null; chart.draw(); }
+            },
+            afterDraw: function(chart){
+                const cx = chart._crosshair && chart._crosshair.x; const cy = chart._crosshair && chart._crosshair.y;
+                if (cx==null || cy==null) return;
+                const ctx = chart.ctx; const area = chart.chartArea; if (!area) return;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(199,202,207,0.5)';
+                ctx.setLineDash([4,4]);
+                // vertical line
+                ctx.beginPath(); ctx.moveTo(cx, area.top); ctx.lineTo(cx, area.bottom); ctx.stroke();
+                // horizontal line
+                ctx.beginPath(); ctx.moveTo(area.left, cy); ctx.lineTo(area.right, cy); ctx.stroke();
+                // read scale values
+                const xScaleRef = chart.scales && chart.scales.x; const yScaleRef = chart.scales && chart.scales.y;
+                if (xScaleRef && yScaleRef){
+                    const xVal = xScaleRef.getValueForPixel(cx);
+                    const yVal = yScaleRef.getValueForPixel(cy);
+                    if (isFinite(xVal) && isFinite(yVal)){
+                        const xTxt = xVal.toFixed(2) + '%';
+                        const yTxt = (yVal*100).toFixed(1) + '%';
+                        const label = 'p=' + xTxt + ' , Pa=' + yTxt;
+                        ctx.fillStyle = 'rgba(28,42,54,0.9)'; ctx.strokeStyle='rgba(64,84,102,0.9)';
+                        ctx.setLineDash([]);
+                        const pad = 6; ctx.font = '12px sans-serif';
+                        const w = ctx.measureText(label).width + pad*2; const h = 20;
+                        const bx = Math.min(Math.max(area.left, cx+8), area.right - w);
+                        const by = Math.max(area.top, cy - h - 8);
+                        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, w, h, 6) : ctx.rect(bx, by, w, h);
+                        ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#e6e9ee'; ctx.fillText(label, bx+pad, by+14);
+                    }
+                }
+                ctx.restore();
+            }
+        };
+        
         c0Chart = new Chart(c0Ctx, {
             type: 'line', data: { datasets: [] }, options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
@@ -2193,7 +2725,8 @@
                     x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, grid: { color: getThemeColors().grid } },
                     y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
                 }
-            }
+            },
+            plugins: [c0CrosshairPlugin]
         });
         return c0Chart;
     }
@@ -2204,14 +2737,18 @@
     }
 
     function computePa(dist, N, n, c, p) {
-        if (dist === 'binom') return jStat.binomial.cdf(c, n, p);
-        if (dist === 'pois') return jStat.poisson.cdf(c, n * p);
-        // hyper
-        const m = Math.round(N * p);
-        return jStat.hypgeom.cdf(c, N, m, n);
+        let result;
+        if (dist === 'binom') result = jStat.binomial.cdf(c, n, p);
+        else if (dist === 'pois') result = jStat.poisson.cdf(c, n * p);
+        else {
+            // hyper
+            const m = Math.round(N * p);
+            result = jStat.hypgeom.cdf(c, N, m, n);
+        }
+        return validateAcceptanceProbability(result, `computePa(dist=${dist}, N=${N}, n=${n}, c=${c}, p=${p})`);
     }
 
-    function findLQ10(dist, N, n) {
+    function findLTPD10(dist, N, n) {
         // find p where Pa = 0.10 for c=0
         const target = 0.10; const c = 0;
         // simple binary search on p in [0, 1]
@@ -2293,8 +2830,8 @@
             }
         }
         document.getElementById('c0_result_lot_range').value = rangeText;
-        const lq10 = findLQ10(dist, N, n);
-        document.getElementById('c0_result_lq10').value = lq10.toFixed(2) + ' %';
+        const ltpD10 = findLTPD10(dist, N, n);
+        document.getElementById('c0_result_lq10').value = ltpD10.toFixed(2) + ' %';
 
         const aqlNumForPlan = (typeof aqlForLookup === 'string') ? parseFloat(aqlForLookup) : aqlForLookup;
         c0LastPlan = { N, n, aql: aqlNumForPlan, dist };
@@ -2336,14 +2873,27 @@
             window.planComparisonQueue = window.planComparisonQueue || [];
             var distName = c0LastPlan.dist === 'hyper' ? 'Hypergeometric' : (c0LastPlan.dist === 'binom' ? 'Binomial' : 'Poisson');
             var label = 'C=0 n='+c0LastPlan.n+' @AQL='+formatAqlLabel(c0LastPlan.aql)+'% ('+distName+')';
+            // Calculate efficiency data for consistent rating
+            const aql = c0LastPlan.aql;
+            const paAql = calculateAcceptanceProbability(c0LastPlan.n, 0, aql / 100, c0LastPlan.N, c0LastPlan.dist);
+            const ltpd = aql * 2; // Assume LTPD is 2x AQL for C=0 plans
+            const paLtpd = calculateAcceptanceProbability(c0LastPlan.n, 0, ltpd / 100, c0LastPlan.N, c0LastPlan.dist);
+            const actualAlpha = 1 - paAql;
+            const actualBeta = paLtpd;
+            
             window.planComparisonQueue.push({ 
                 n: c0LastPlan.n, 
                 c: 0, 
-                aql: c0LastPlan.aql, 
+                aql: aql, 
                 label: label,
                 dist: c0LastPlan.dist,
                 N: c0LastPlan.N,
-                source: 'c0'
+                source: 'c0',
+                // Include efficiency calculation data
+                paAql: paAql,
+                paLtpd: paLtpd,
+                actualAlpha: actualAlpha,
+                actualBeta: actualBeta
             });
             alert('Exported to Plan Comparison queue. Switch to Multiple Plan Comparison to import.');
         });
@@ -2404,6 +2954,51 @@
     }
     function ensureSsChart() {
         if (ssChart) return ssChart;
+        
+        // Crosshair plugin for AQL Lookup page
+        const ssCrosshairPlugin = {
+            id: 'ssCrosshairPlugin',
+            afterEvent: function(chart, args){
+                const e = args.event; if (!e) return;
+                chart._crosshair = chart._crosshair || { x: null, y: null };
+                if (e.type==='mousemove'){ chart._crosshair.x = e.x; chart._crosshair.y = e.y; chart.draw(); }
+                if (e.type==='mouseout'){ chart._crosshair.x = null; chart._crosshair.y = null; chart.draw(); }
+            },
+            afterDraw: function(chart){
+                const cx = chart._crosshair && chart._crosshair.x; const cy = chart._crosshair && chart._crosshair.y;
+                if (cx==null || cy==null) return;
+                const ctx = chart.ctx; const area = chart.chartArea; if (!area) return;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(199,202,207,0.5)';
+                ctx.setLineDash([4,4]);
+                // vertical line
+                ctx.beginPath(); ctx.moveTo(cx, area.top); ctx.lineTo(cx, area.bottom); ctx.stroke();
+                // horizontal line
+                ctx.beginPath(); ctx.moveTo(area.left, cy); ctx.lineTo(area.right, cy); ctx.stroke();
+                // read scale values
+                const xScaleRef = chart.scales && chart.scales.x; const yScaleRef = chart.scales && chart.scales.y;
+                if (xScaleRef && yScaleRef){
+                    const xVal = xScaleRef.getValueForPixel(cx);
+                    const yVal = yScaleRef.getValueForPixel(cy);
+                    if (isFinite(xVal) && isFinite(yVal)){
+                        const xTxt = xVal.toFixed(2) + '%';
+                        const yTxt = (yVal*100).toFixed(1) + '%';
+                        const label = 'p=' + xTxt + ' , Pa=' + yTxt;
+                        ctx.fillStyle = 'rgba(28,42,54,0.9)'; ctx.strokeStyle='rgba(64,84,102,0.9)';
+                        ctx.setLineDash([]);
+                        const pad = 6; ctx.font = '12px sans-serif';
+                        const w = ctx.measureText(label).width + pad*2; const h = 20;
+                        const bx = Math.min(Math.max(area.left, cx+8), area.right - w);
+                        const by = Math.max(area.top, cy - h - 8);
+                        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, w, h, 6) : ctx.rect(bx, by, w, h);
+                        ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#e6e9ee'; ctx.fillText(label, bx+pad, by+14);
+                    }
+                }
+                ctx.restore();
+            }
+        };
+        
         ssChart = new Chart(ssCtx, { type:'line', data:{datasets:[]}, options:{ responsive:true, maintainAspectRatio:false, animation:false,
             plugins:{ 
                 legend:{ display:true, labels:{ color: getThemeColors().text } },
@@ -2416,14 +3011,14 @@
                             const datasetLabel = context.dataset.label || '';
                             const xText = (isFinite(x) ? (+x).toFixed(x < 1 ? 3 : 2) : '-');
                             const yText = (isFinite(y) ? (y * 100).toFixed(1) : '-');
-                            return `${datasetLabel}: p=${xText}%, Probability=${yText}%`;
+                            return `${datasetLabel}: p=${xText}%, Pa=${yText}%`;
                         }
                     }
                 }
             },
             scales:{ x:{ type:'linear', title:{ display:true, text:'Defect Rate (p%)' }, grid:{ color: getThemeColors().grid } },
-                    y:{ min:0, max:1, title:{ display:true, text:'Probability' }, ticks:{ callback:function(v){ return (v*100).toFixed(0)+'%'; } }, grid:{ color: getThemeColors().grid } } }
-        }});
+                    y:{ min:0, max:1, title:{ display:true, text:'Acceptance Probability (Pa%)' }, ticks:{ callback:function(v){ return (v*100).toFixed(0)+'%'; } }, grid:{ color: getThemeColors().grid } } }
+        }, plugins: [ssCrosshairPlugin]});
         return ssChart;
     }
     function getCodeLetter(N, level) {
@@ -2488,9 +3083,14 @@
         return { finalLetter: currentLetter, finalAc: norm.ac, finalRe: norm.re };
     }
     function ssComputePa(dist, N, n, c, p) {
-        if (dist==='binom') return jStat.binomial.cdf(c, n, p);
-        if (dist==='pois') return jStat.poisson.cdf(c, n*p);
-        const m = Math.round(N*p); return jStat.hypgeom.cdf(c, N, m, n);
+        let result;
+        if (dist==='binom') result = jStat.binomial.cdf(c, n, p);
+        else if (dist==='pois') result = jStat.poisson.cdf(c, n*p);
+        else {
+            const m = Math.round(N*p); 
+            result = jStat.hypgeom.cdf(c, N, m, n);
+        }
+        return validateAcceptanceProbability(result, `ssComputePa(dist=${dist}, N=${N}, n=${n}, c=${c}, p=${p})`);
     }
     function drawSsChart(N, n, c, aql, code, level, dist) {
         const maxX = parseFloat(ssXMaxEl.value||'5'); const xs = generatePValuesC0(maxX);
@@ -2599,14 +3199,27 @@
             window.planComparisonQueue = window.planComparisonQueue || [];
             var distName = ssLastPlan.dist === 'hyper' ? 'Hypergeometric' : (ssLastPlan.dist === 'binom' ? 'Binomial' : 'Poisson');
             var label = 'AQL '+ssLastPlan.aql+' (Code '+ssLastPlan.code+', '+distName+')';
+            // Calculate efficiency data for consistent rating
+            const aql = parseFloat(ssLastPlan.aql);
+            const paAql = calculateAcceptanceProbability(ssLastPlan.n, ssLastPlan.c, aql / 100, ssLastPlan.N, ssLastPlan.dist);
+            const ltpd = aql * 2; // Assume LTPD is 2x AQL for standard plans
+            const paLtpd = calculateAcceptanceProbability(ssLastPlan.n, ssLastPlan.c, ltpd / 100, ssLastPlan.N, ssLastPlan.dist);
+            const actualAlpha = 1 - paAql;
+            const actualBeta = paLtpd;
+            
             window.planComparisonQueue.push({ 
                 n: ssLastPlan.n, 
                 c: ssLastPlan.c, 
-                aql: parseFloat(ssLastPlan.aql), 
+                aql: aql, 
                 label: label,
                 dist: ssLastPlan.dist,
                 N: ssLastPlan.N,
-                source: 'aql'
+                source: 'aql',
+                // Include efficiency calculation data
+                paAql: paAql,
+                paLtpd: paLtpd,
+                actualAlpha: actualAlpha,
+                actualBeta: actualBeta
             });
             alert('Exported to Plan Comparison queue. Switch to Multiple Plan Comparison to import.');
         });
@@ -2809,6 +3422,81 @@
             highlight: null
         },
         {
+            title: "📈 Advanced Curve Analysis: AOQ & ATI",
+            content: `
+                <h3>Beyond OC Curves: Quality and Cost Analysis</h3>
+                <p>The Multiple Plan Comparison page now supports three types of curves for comprehensive plan evaluation:</p>
+                
+                <div class="highlight-box">
+                    <strong>📊 OC Curves (Operating Characteristic):</strong>
+                    <ul>
+                        <li>Shows acceptance probability vs. defect rate</li>
+                        <li>Primary tool for risk assessment</li>
+                        <li>Steeper curves = better discrimination</li>
+                    </ul>
+                </div>
+                
+                <div class="example-box">
+                    <strong>📈 AOQ Curves (Average Outgoing Quality):</strong>
+                    <ul>
+                        <li>Formula: AOQ = p × Pa × (N-n)/N</li>
+                        <li>Shows average quality of accepted lots</li>
+                        <li>Lower AOQ = better quality protection</li>
+                        <li>Peak AOQ indicates maximum outgoing quality</li>
+                    </ul>
+                </div>
+                
+                <div class="warning-box">
+                    <strong>💰 ATI Curves (Average Total Inspection):</strong>
+                    <ul>
+                        <li>Formula: ATI = n + (1-Pa) × (N-n)</li>
+                        <li>Shows average inspection cost per lot</li>
+                        <li>Lower ATI = more cost-effective</li>
+                        <li>Balances sample size vs. 100% inspection</li>
+                    </ul>
+                </div>
+                
+                <p><strong>🎯 Usage:</strong> Click "Show AOQ Curves" or "Show ATI Curves" buttons to switch between different analysis modes!</p>
+            `,
+            highlight: null
+        },
+        {
+            title: "⚖️ AQL-LTPD Balanced Plans",
+            content: `
+                <h3>Advanced Optimization: Balancing Producer and Consumer Risks</h3>
+                <p>The AQL-LTPD Balanced Plan page uses mathematical optimization to design plans that balance both producer and consumer requirements.</p>
+                
+                <div class="highlight-box">
+                    <strong>🎯 Key Concepts:</strong>
+                    <ul>
+                        <li><strong>AQL (Acceptable Quality Level):</strong> Maximum defect rate you accept 95% of the time</li>
+                        <li><strong>LTPD (Lot Tolerance Percent Defective):</strong> Maximum defect rate you accept 10% of the time</li>
+                        <li><strong>Producer's Risk (α):</strong> Probability of rejecting a good lot</li>
+                        <li><strong>Consumer's Risk (β):</strong> Probability of accepting a bad lot</li>
+                    </ul>
+                </div>
+                
+                <div class="example-box">
+                    <strong>🔧 Optimization Strategies:</strong>
+                    <ul>
+                        <li><strong>Minimize Sample Size:</strong> Find smallest n that meets constraints</li>
+                        <li><strong>Balance AQL-LTPD:</strong> Equal weight to both requirements</li>
+                        <li><strong>Maximize Producer Protection:</strong> Minimize producer's risk</li>
+                        <li><strong>Maximize Consumer Protection:</strong> Minimize consumer's risk</li>
+                    </ul>
+                </div>
+                
+                <div class="warning-box">
+                    <strong>📊 Plan Efficiency Formula:</strong>
+                    <p>E = 1 - |Pa_AQL - (1-α)| - |Pa_LTPD - β| - penalty</p>
+                    <p>Higher efficiency = better balance of risks and requirements</p>
+                </div>
+                
+                <p><strong>🎯 Usage:</strong> Set your AQL, LTPD, lot size, and risk preferences, then choose optimization strategy!</p>
+            `,
+            highlight: null
+        },
+        {
             title: "🎓 Quiz: Test Your Knowledge!",
             content: `
                 <h3>Quick Knowledge Check</h3>
@@ -2842,7 +3530,7 @@
         { q: 'Where do you set the x-axis maximum on the Comparison chart?', options: ['Left parameters panel', 'Chart toolbar (top-right)', 'Hidden setting'], answer: 1 },
         { q: 'In hypergeometric distribution, which extra parameter is required?', options: ['Lot size N', 'Lambda', 'Mean'], answer: 0 },
         { q: 'The Poisson parameter is typically approximated as…', options: ['n·p', 'n/p', 'n+p'], answer: 0 },
-        { q: 'To display an AQL marker on the chart, you must provide…', options: ['AQL (%)', 'LQ (%)', 'α and β risks'], answer: 0 },
+        { q: 'To display an AQL marker on the chart, you must provide…', options: ['AQL (%)', 'LTPD (%)', 'α and β risks'], answer: 0 },
         { q: 'A steeper OC curve implies…', options: ['Better discrimination', 'Worse discrimination', 'Cannot tell'], answer: 0 },
         { q: 'On the Reverse page you can solve for…', options: ['AQL', 'n', 'c', 'All of the above'], answer: 3 },
         { q: 'A common use case of C=0 plans is…', options: ['High-risk critical defects', 'General inspection', 'Documentation'], answer: 0 },
@@ -2870,14 +3558,28 @@
         { q: 'When comparing different (n, c) plans, recommended approach?', options: ['View one curve only', 'Visualize multiple curves together', 'Rely on text'], answer: 1 },
         { q: 'Typical acceptance probability at AQL?', options: ['50%', '80%', '95%'], answer: 2 },
         { q: 'To tighten inspection stringency you could…', options: ['Lower n', 'Lower c or increase n', 'Do nothing'], answer: 1 },
-        { q: 'LQ commonly describes…', options: ['A consumer-risk point for bad lots', 'Average defect rate', 'Best cost'], answer: 0 },
+        { q: 'LTPD commonly describes…', options: ['A consumer-risk point for bad lots', 'Average defect rate', 'Best cost'], answer: 0 },
         { q: 'Label on the randomize button should be…', options: ['Refresh questions', 'Refresh Quiz', 'Reset quiz'], answer: 1 },
         { q: 'If distributions differ but (n, c) are the same, OC can be…', options: ['Exactly the same', 'Slightly different', 'Not drawable'], answer: 1 },
         { q: 'An advantage of C=0 for high-risk defects is…', options: ['Looser acceptance threshold', 'Lower consumer risk', 'Higher producer risk'], answer: 1 },
         { q: 'Position of the AQL marker is determined by…', options: ['AQL and Pa(AQL)', 'n and c', 'N and n'], answer: 0 },
         { q: 'After changing x-axis max in Comparison, AQL dots…', options: ['Do not update', 'Update automatically', 'Require page reload'], answer: 1 },
         { q: 'Can the Reverse page export a plan to Comparison?', options: ['Yes', 'No', 'C=0 only'], answer: 0 },
-        { q: 'Can the AQL Lookup page export a plan?', options: ['Yes', 'No', 'Hypergeometric only'], answer: 0 }
+        { q: 'Can the AQL Lookup page export a plan?', options: ['Yes', 'No', 'Hypergeometric only'], answer: 0 },
+        { q: 'What does AOQ stand for?', options: ['Average Outgoing Quality', 'Acceptable Quality Level', 'Average Quality Output'], answer: 0 },
+        { q: 'What does ATI stand for?', options: ['Average Total Inspection', 'Acceptable Total Inspection', 'Average Test Items'], answer: 0 },
+        { q: 'AOQ formula is: AOQ = p × Pa × (N-n)/N. What does p represent?', options: ['Sample size', 'Defect rate', 'Acceptance probability'], answer: 1 },
+        { q: 'ATI formula is: ATI = n + (1-Pa) × (N-n). What does (1-Pa) represent?', options: ['Acceptance probability', 'Rejection probability', 'Defect rate'], answer: 1 },
+        { q: 'In the AQL-LTPD Balanced Plan page, what does "Minimize Sample Size" optimization do?', options: ['Find largest n', 'Find smallest n that meets constraints', 'Balance n and c'], answer: 1 },
+        { q: 'Plan Efficiency formula includes which components?', options: ['Only AQL deviation', 'AQL deviation + LTPD deviation + penalty', 'Only LTPD deviation'], answer: 1 },
+        { q: 'Which curve type shows inspection costs?', options: ['OC curves', 'AOQ curves', 'ATI curves'], answer: 2 },
+        { q: 'Which curve type shows outgoing quality?', options: ['OC curves', 'AOQ curves', 'ATI curves'], answer: 1 },
+        { q: 'In Multiple Plan Comparison, how many curve types can you display?', options: ['1 (OC only)', '2 (OC and AOQ)', '3 (OC, AOQ, ATI)'], answer: 2 },
+        { q: 'What happens when you change max defect rate in AOQ mode?', options: ['Switches to OC mode', 'Stays in AOQ mode', 'Shows error'], answer: 1 },
+        { q: 'ATI curves show values in which unit?', options: ['Percentage (%)', 'Count (number)', 'Decimal (0-1)'], answer: 1 },
+        { q: 'AOQ curves show values in which unit?', options: ['Percentage (%)', 'Count (number)', 'Decimal (0-1)'], answer: 0 },
+        { q: 'What is the purpose of AQL-LTPD Balanced Plans?', options: ['Find standard plans', 'Optimize plans balancing both risks', 'Calculate C=0 plans'], answer: 1 },
+        { q: 'Which optimization strategy gives equal weight to AQL and LTPD?', options: ['Minimize Sample Size', 'Balance AQL-LTPD', 'Maximize Producer Protection'], answer: 1 }
     ];
 
     function shuffleArray(arr){ for (let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
@@ -3052,6 +3754,739 @@
         tutorialHighlight.style.top = `${rect.top - 5}px`;
         tutorialHighlight.style.width = `${rect.width + 10}px`;
         tutorialHighlight.style.height = `${rect.height + 10}px`;
+    }
+
+    // ===== AQL-LTPD Balanced Plan Page Functionality =====
+    const aqlLtpdElements = {
+        aqlInput: document.getElementById('aql_ltpd_aql_input'),
+        ltpdInput: document.getElementById('aql_ltpd_ltpd_input'),
+        lotSizeInput: document.getElementById('aql_ltpd_lot_size'),
+        distSelect: document.getElementById('aql_ltpd_dist_select'),
+        optimizationSelect: document.getElementById('aql_ltpd_optimization'),
+        alphaInput: document.getElementById('aql_ltpd_alpha'),
+        betaInput: document.getElementById('aql_ltpd_beta'),
+        calculateBtn: document.getElementById('aql_ltpd_calculate_btn'),
+        clearBtn: document.getElementById('aql_ltpd_clear_btn'),
+        errorDiv: document.getElementById('aql_ltpd_error'),
+        resultN: document.getElementById('aql_ltpd_result_n'),
+        resultC: document.getElementById('aql_ltpd_result_c'),
+        efficiency: document.getElementById('aql_ltpd_efficiency'),
+        aqlPa: document.getElementById('aql_ltpd_aql_pa'),
+        ltpdPa: document.getElementById('aql_ltpd_ltpd_pa'),
+        actualAlpha: document.getElementById('aql_ltpd_actual_alpha'),
+        actualBeta: document.getElementById('aql_ltpd_actual_beta'),
+        aoql: document.getElementById('aql_ltpd_aoql'),
+        asn: document.getElementById('aql_ltpd_asn'),
+        efficiencyRating: document.getElementById('aql_ltpd_efficiency_rating'),
+        improvements: document.getElementById('aql_ltpd_improvements'),
+        notes: document.getElementById('aql_ltpd_notes'),
+        xMaxInput: document.getElementById('aql_ltpd_x_max'),
+        exportPngBtn: document.getElementById('aql_ltpd_export_png_toolbar'),
+        exportCsvBtn: document.getElementById('aql_ltpd_export_csv_toolbar'),
+        exportPlanBtn: document.getElementById('aql_ltpd_export_plan')
+    };
+
+    let aqlLtpdChart = null;
+    let aqlLtpdLastPlan = null;
+
+    // AQL-LTPD Optimization Algorithm
+    function calculateOptimalAqlLtpdPlan(aql, ltpd, lotSize, distribution, optimizationTarget, alpha, beta) {
+        // Input validation
+        if (aql >= ltpd) {
+            throw new Error('AQL must be less than LTPD');
+        }
+        if (alpha <= 0 || alpha >= 1 || beta <= 0 || beta >= 1) {
+            throw new Error('Risk values must be between 0 and 1');
+        }
+
+        const idealPaAql = 1 - alpha; // Ideal acceptance probability at AQL
+        const idealPaLtpd = beta;     // Ideal acceptance probability at LTPD
+
+        let bestPlan = null;
+        let bestScore = Infinity;
+        let feasiblePlans = []; // Track plans that satisfy constraints
+
+        // Search space: n from 1 to 500, c from 0 to n
+        for (let n = 1; n <= 500; n++) {
+            for (let c = 0; c <= n; c++) {
+                try {
+                    // Calculate Pa at AQL and LTPD points
+                    const paAql = calculateAcceptanceProbability(n, c, aql / 100, lotSize, distribution);
+                    const paLtpd = calculateAcceptanceProbability(n, c, ltpd / 100, lotSize, distribution);
+
+                    // Calculate actual risks
+                    const actualAlpha = 1 - paAql;
+                    const actualBeta = paLtpd;
+
+                    // Calculate score based on optimization target
+                    let score;
+                    switch (optimizationTarget) {
+                        case 'minimize_n':
+                            // Minimize sample size while satisfying risk constraints
+                            if (actualAlpha <= alpha && actualBeta <= beta) {
+                                score = n; // Lower n is better
+                            } else {
+                                continue; // Skip if constraints not satisfied
+                            }
+                            break;
+                        case 'balance':
+                            // Balance AQL-LTPD performance with penalty for constraint violations
+                            const aqlDeviation = Math.abs(paAql - idealPaAql);
+                            const ltpdDeviation = Math.abs(paLtpd - idealPaLtpd);
+                            
+                            // Add penalty for constraint violations
+                            let constraintPenalty = 0;
+                            if (actualAlpha > alpha) {
+                                constraintPenalty += (actualAlpha - alpha) * 10; // Heavy penalty
+                            }
+                            if (actualBeta > beta) {
+                                constraintPenalty += (actualBeta - beta) * 10; // Heavy penalty
+                            }
+                            
+                            score = aqlDeviation + ltpdDeviation + constraintPenalty;
+                            break;
+                        case 'max_producer':
+                            // Maximize producer protection (minimize actual alpha)
+                            score = actualAlpha;
+                            break;
+                        case 'max_consumer':
+                            // Maximize consumer protection (minimize actual beta)
+                            score = actualBeta;
+                            break;
+                        default:
+                            score = n; // Default to minimize sample size
+                    }
+
+                    // Track feasible plans (those that satisfy constraints)
+                    const isFeasible = (actualAlpha <= alpha && actualBeta <= beta);
+                    if (isFeasible) {
+                        feasiblePlans.push({
+                            n: n,
+                            c: c,
+                            paAql: paAql,
+                            paLtpd: paLtpd,
+                            actualAlpha: actualAlpha,
+                            actualBeta: actualBeta,
+                            score: score
+                        });
+                    }
+
+                    // Update best plan if this is better
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestPlan = {
+                            n: n,
+                            c: c,
+                            paAql: paAql,
+                            paLtpd: paLtpd,
+                            actualAlpha: actualAlpha,
+                            actualBeta: actualBeta,
+                            score: score
+                        };
+                    }
+                } catch (e) {
+                    // Skip invalid combinations
+                    continue;
+                }
+            }
+        }
+
+        // For minimize_n optimization, ensure we get the smallest feasible n
+        if (optimizationTarget === 'minimize_n' && feasiblePlans.length > 0) {
+            // Find the plan with minimum n among feasible plans
+            const minNPlan = feasiblePlans.reduce((min, plan) => 
+                plan.n < min.n ? plan : min
+            );
+            return minNPlan;
+        }
+
+        return bestPlan;
+    }
+
+    // Validate acceptance probability and ensure it's within [0, 1] range
+    function validateAcceptanceProbability(pa, context = '') {
+        if (pa < 0) {
+            console.warn(`Negative acceptance probability detected: ${pa} ${context}`);
+            return 0;
+        }
+        if (pa > 1) {
+            console.warn(`Acceptance probability > 100% detected: ${pa} ${context}`);
+            return 1;
+        }
+        if (!isFinite(pa)) {
+            console.warn(`Invalid acceptance probability detected: ${pa} ${context}`);
+            return 0;
+        }
+        return pa;
+    }
+
+    // Calculate acceptance probability for given parameters
+    function calculateAcceptanceProbability(n, c, p, N, distribution) {
+        // Add input parameter validation
+        if (p < 0 || p > 1) {
+            console.warn('Invalid probability p:', p);
+            p = Math.max(0, Math.min(1, p));
+        }
+        
+        // Special handling for extremely low defect rates
+        if (p === 0) {
+            // Perfect quality: always accept if c >= 0
+            return c >= 0 ? 1 : 0;
+        }
+        
+        let result;
+        switch (distribution) {
+            case 'binom':
+                result = binomialCDF(c, n, p);
+                break;
+            case 'pois':
+                result = poissonCDF(c, n * p);
+                break;
+            case 'hyper':
+                if (N === null || N === undefined) {
+                    throw new Error('Lot size required for Hypergeometric distribution');
+                }
+                const K = Math.round(N * p);
+                result = hypergeometricCDF(c, N, K, n);
+                break;
+            default:
+                result = binomialCDF(c, n, p);
+        }
+        
+        // Ensure result is within [0, 1] range
+        return validateAcceptanceProbability(result, `(n=${n}, c=${c}, p=${p}, distribution=${distribution})`);
+    }
+
+    // Statistical distribution functions (reuse existing ones)
+    function binomialCDF(k, n, p) {
+        // Add boundary condition checks
+        if (k < 0) return 0;
+        if (k >= n) return 1;
+        if (p <= 0) return k === 0 ? 1 : 0;
+        if (p >= 1) return 1;
+        
+        // For very small p, use more precise calculation to avoid numerical issues
+        if (p < 1e-10) {
+            // When p is extremely small, P(X <= k) ≈ 1 for any reasonable k
+            return 1;
+        }
+        
+        let sum = 0;
+        for (let i = 0; i <= k; i++) {
+            sum += binomialPMF(i, n, p);
+            // Prevent numerical overflow
+            if (sum > 1) return 1;
+        }
+        return Math.min(1, sum);
+    }
+
+    function binomialPMF(k, n, p) {
+        if (k < 0 || k > n) return 0;
+        if (p === 0) return k === 0 ? 1 : 0;
+        if (p === 1) return k === n ? 1 : 0;
+        
+        let result = 1;
+        for (let i = 1; i <= k; i++) {
+            result *= (n - i + 1) * p / (i * (1 - p));
+        }
+        return result * Math.pow(1 - p, n - k);
+    }
+
+    function poissonCDF(k, lambda) {
+        if (lambda <= 0) return k >= 0 ? 1 : 0;
+        if (lambda > 100) {
+            // Use normal approximation to avoid numerical underflow
+            const mean = lambda;
+            const variance = lambda;
+            const z = (k + 0.5 - mean) / Math.sqrt(variance);
+            // Simple normal approximation
+            return 0.5 * (1 + Math.sign(z) * Math.sqrt(1 - Math.exp(-2 * z * z / Math.PI)));
+        }
+        
+        let sum = 0;
+        for (let i = 0; i <= k; i++) {
+            sum += Math.exp(-lambda) * Math.pow(lambda, i) / factorial(i);
+            if (sum > 1) return 1;
+        }
+        return Math.min(1, sum);
+    }
+
+    function hypergeometricCDF(k, N, K, n) {
+        if (n > N || K > N || k > Math.min(n, K)) return 0;
+        if (k < 0) return 0;
+        if (k >= Math.min(n, K)) return 1;
+        
+        let sum = 0;
+        for (let i = 0; i <= k; i++) {
+            sum += hypergeometricPMF(i, N, K, n);
+            if (sum > 1) return 1;
+        }
+        return Math.min(1, sum);
+    }
+
+    function hypergeometricPMF(k, N, K, n) {
+        if (k < 0 || k > n || k > K || n - k > N - K) return 0;
+        
+        const numerator = combination(K, k) * combination(N - K, n - k);
+        const denominator = combination(N, n);
+        return numerator / denominator;
+    }
+
+    function combination(n, k) {
+        if (k > n || k < 0) return 0;
+        if (k === 0 || k === n) return 1;
+        
+        let result = 1;
+        for (let i = 1; i <= k; i++) {
+            result *= (n - i + 1) / i;
+        }
+        return result;
+    }
+
+    function factorial(n) {
+        if (n <= 1) return 1;
+        let result = 1;
+        for (let i = 2; i <= n; i++) {
+            result *= i;
+        }
+        return result;
+    }
+
+    // Calculate AOQL (Average Outgoing Quality Limit)
+    function calculateAOQL(n, c, p, N, distribution) {
+        // Simplified AOQL calculation - in practice this would be more complex
+        const pa = calculateAcceptanceProbability(n, c, p, N, distribution);
+        return p * pa; // Simplified version
+    }
+
+    // Calculate ASN (Average Sample Number)
+    function calculateASN(n, c, p, N, distribution) {
+        // For single sampling plans, ASN = n
+        // For more complex plans (double, multiple), this would be more sophisticated
+        return n;
+    }
+    
+    // Calculate Plan Efficiency Score
+    function calculatePlanEfficiency(plan, idealPaAql, idealPaLtpd, alpha, beta) {
+        // Calculate efficiency based on how close the plan is to ideal performance
+        const aqlDeviation = Math.abs(plan.paAql - idealPaAql);
+        const ltpdDeviation = Math.abs(plan.paLtpd - idealPaLtpd);
+        
+        // Penalty for constraint violations
+        let constraintPenalty = 0;
+        if (plan.actualAlpha > alpha) {
+            constraintPenalty += (plan.actualAlpha - alpha) * 2;
+        }
+        if (plan.actualBeta > beta) {
+            constraintPenalty += (plan.actualBeta - beta) * 2;
+        }
+        
+        // Efficiency score (0-1, higher is better)
+        const totalDeviation = aqlDeviation + ltpdDeviation + constraintPenalty;
+        const efficiency = Math.max(0, 1 - totalDeviation);
+        
+        return efficiency;
+    }
+    
+    // Calculate Efficiency Rating and Generate Improvement Suggestions
+    function calculateEfficiencyRatingAndSuggestions(plan, efficiency, alpha, beta, aql, ltpd, lotSize) {
+        const rating = getEfficiencyRating(efficiency);
+        const suggestions = generateImprovementSuggestions(plan, efficiency, alpha, beta, aql, ltpd, lotSize);
+        
+        return { rating, suggestions };
+    }
+    
+    // Get efficiency rating based on efficiency score
+    function getEfficiencyRating(efficiency) {
+        if (efficiency >= 0.95) return "🌟 Excellent (95%+)";
+        if (efficiency >= 0.85) return "✅ Very Good (85-95%)";
+        if (efficiency >= 0.75) return "👍 Good (75-85%)";
+        if (efficiency >= 0.65) return "⚠️ Fair (65-75%)";
+        if (efficiency >= 0.50) return "❌ Poor (50-65%)";
+        return "🚫 Very Poor (<50%)";
+    }
+    
+    // Generate improvement suggestions based on plan analysis
+    function generateImprovementSuggestions(plan, efficiency, alpha, beta, aql, ltpd, lotSize) {
+        const suggestions = [];
+        
+        // Sample size analysis
+        if (plan.n > 200) {
+            suggestions.push("• Consider reducing sample size: Current n=" + plan.n + " is quite large. Try adjusting AQL/LTPD values or risk constraints.");
+        } else if (plan.n < 20) {
+            suggestions.push("• Sample size is very small (n=" + plan.n + "). Consider increasing for better statistical power.");
+        }
+        
+        // Risk constraint analysis
+        if (plan.actualAlpha > alpha * 1.2) {
+            suggestions.push("• Producer's risk is high (" + (plan.actualAlpha * 100).toFixed(1) + "% vs target " + (alpha * 100) + "%). Consider increasing sample size or adjusting AQL.");
+        }
+        
+        if (plan.actualBeta > beta * 1.2) {
+            suggestions.push("• Consumer's risk is high (" + (plan.actualBeta * 100).toFixed(1) + "% vs target " + (beta * 100) + "%). Consider increasing sample size or adjusting LTPD.");
+        }
+        
+        // Efficiency-based suggestions
+        if (efficiency < 0.75) {
+            suggestions.push("• Plan efficiency is low. Consider:");
+            suggestions.push("  - Adjusting AQL/LTPD values for better balance");
+            suggestions.push("  - Using different optimization strategy");
+            suggestions.push("  - Considering double sampling plans for large lots");
+        }
+        
+        // Distribution-specific suggestions
+        if (lotSize < 1000) {
+            suggestions.push("• For small lots (N=" + lotSize + "), consider using Hypergeometric distribution for more accurate results.");
+        } else if (lotSize > 10000) {
+            suggestions.push("• For large lots (N=" + lotSize + "), Binomial or Poisson distributions are appropriate.");
+        }
+        
+        // AQL-LTPD ratio analysis
+        const ratio = ltpd / aql;
+        if (ratio < 3) {
+            suggestions.push("• AQL-LTPD ratio is small (" + ratio.toFixed(1) + "). Consider wider separation for better discrimination.");
+        } else if (ratio > 10) {
+            suggestions.push("• AQL-LTPD ratio is very large (" + ratio.toFixed(1) + "). This may require very large sample sizes.");
+        }
+        
+        // General recommendations
+        if (suggestions.length === 0) {
+            suggestions.push("• Plan appears well-balanced. Consider monitoring actual performance and adjusting as needed.");
+        }
+        
+        return suggestions.join('\n');
+    }
+    
+
+    // Update AQL-LTPD chart
+    function updateAqlLtpdChart(plan) {
+        if (!plan) return;
+
+        const ctx = document.getElementById('ocChartAQL_LTPD');
+        if (!ctx) return;
+
+        const xMax = parseFloat(aqlLtpdElements.xMaxInput?.value || 10);
+        const step = 0.001;
+        const pValues = [];
+        const paValues = [];
+
+        // Generate OC curve data with special handling for low defect rates
+        for (let p = 0; p <= xMax / 100; p += step) {
+            pValues.push(p * 100);
+            try {
+                let pa;
+                if (p === 0) {
+                    // Perfect quality: always accept
+                    pa = 1;
+                } else if (p < 1e-6) {
+                    // Extremely low defect rate: use asymptotic approximation
+                    pa = 1 - Math.exp(-plan.n * p * (1 + p/2));
+                } else {
+                    pa = calculateAcceptanceProbability(plan.n, plan.c, p, 
+                        aqlLtpdElements.lotSizeInput?.value || 1000, 
+                        aqlLtpdElements.distSelect?.value || 'binom');
+                }
+                paValues.push(pa);
+            } catch (e) {
+                paValues.push(NaN);
+            }
+        }
+
+        // Destroy existing chart
+        if (aqlLtpdChart) {
+            aqlLtpdChart.destroy();
+        }
+
+        // Crosshair plugin for AQL-LTPD Balanced Plan page
+        const aqlLtpdCrosshairPlugin = {
+            id: 'aqlLtpdCrosshairPlugin',
+            afterEvent: function(chart, args){
+                const e = args.event; if (!e) return;
+                chart._crosshair = chart._crosshair || { x: null, y: null };
+                if (e.type==='mousemove'){ chart._crosshair.x = e.x; chart._crosshair.y = e.y; chart.draw(); }
+                if (e.type==='mouseout'){ chart._crosshair.x = null; chart._crosshair.y = null; chart.draw(); }
+            },
+            afterDraw: function(chart){
+                const cx = chart._crosshair && chart._crosshair.x; const cy = chart._crosshair && chart._crosshair.y;
+                if (cx==null || cy==null) return;
+                const ctx = chart.ctx; const area = chart.chartArea; if (!area) return;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(199,202,207,0.5)';
+                ctx.setLineDash([4,4]);
+                // vertical line
+                ctx.beginPath(); ctx.moveTo(cx, area.top); ctx.lineTo(cx, area.bottom); ctx.stroke();
+                // horizontal line
+                ctx.beginPath(); ctx.moveTo(area.left, cy); ctx.lineTo(area.right, cy); ctx.stroke();
+                // read scale values
+                const xScaleRef = chart.scales && chart.scales.x; const yScaleRef = chart.scales && chart.scales.y;
+                if (xScaleRef && yScaleRef){
+                    const xVal = xScaleRef.getValueForPixel(cx);
+                    const yVal = yScaleRef.getValueForPixel(cy);
+                    if (isFinite(xVal) && isFinite(yVal)){
+                        const xTxt = xVal.toFixed(2) + '%';
+                        const yTxt = (yVal*100).toFixed(1) + '%';
+                        const label = 'p=' + xTxt + ' , Pa=' + yTxt;
+                        ctx.fillStyle = 'rgba(28,42,54,0.9)'; ctx.strokeStyle='rgba(64,84,102,0.9)';
+                        ctx.setLineDash([]);
+                        const pad = 6; ctx.font = '12px sans-serif';
+                        const w = ctx.measureText(label).width + pad*2; const h = 20;
+                        const bx = Math.min(Math.max(area.left, cx+8), area.right - w);
+                        const by = Math.max(area.top, cy - h - 8);
+                        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, w, h, 6) : ctx.rect(bx, by, w, h);
+                        ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#e6e9ee'; ctx.fillText(label, bx+pad, by+14);
+                    }
+                }
+                ctx.restore();
+            }
+        };
+
+        // Create new chart
+        aqlLtpdChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: `Balanced Plan (n=${plan.n}, c=${plan.c})`,
+                    data: pValues.map((p, i) => ({ x: p, y: paValues[i] })),
+                    borderColor: '#1783FF',
+                    backgroundColor: 'rgba(23, 131, 255, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1
+                }, {
+                    label: 'AQL Point',
+                    data: [{ x: parseFloat(aqlLtpdElements.aqlInput?.value || 1), y: plan.paAql }],
+                    type: 'scatter',
+                    backgroundColor: 'rgba(46, 204, 113, 0.8)',
+                    borderColor: '#2ecc71',
+                    pointRadius: 8,
+                    pointHoverRadius: 10
+                }, {
+                    label: 'LTPD Point',
+                    data: [{ x: parseFloat(aqlLtpdElements.ltpdInput?.value || 5), y: plan.paLtpd }],
+                    type: 'scatter',
+                    backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                    borderColor: '#e74c3c',
+                    pointRadius: 8,
+                    pointHoverRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'AQL-LTPD Balanced Sampling Plan OC Curve',
+                        color: getThemeColors().text
+                    },
+                    legend: {
+                        display: true,
+                        labels: { color: getThemeColors().text }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(context) {
+                                const x = context.parsed && context.parsed.x;
+                                const y = context.parsed && context.parsed.y;
+                                const datasetLabel = context.dataset.label || '';
+                                const xText = (isFinite(x) ? (+x).toFixed(x < 1 ? 3 : 2) : '-');
+                                const yText = (isFinite(y) ? (y * 100).toFixed(1) : '-');
+                                return `${datasetLabel}: p=${xText}%, Pa=${yText}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        title: {
+                            display: true,
+                            text: 'Defect Rate (%)',
+                            color: getThemeColors().text
+                        },
+                        grid: { color: getThemeColors().grid }
+                    },
+                    y: {
+                        min: 0,
+                        max: 1,
+                        title: {
+                            display: true,
+                            text: 'Acceptance Probability',
+                            color: getThemeColors().text
+                        },
+                        ticks: {
+                            callback: function(v) { return (v * 100).toFixed(0) + '%'; }
+                        },
+                        grid: { color: getThemeColors().grid }
+                    }
+                }
+            },
+            plugins: [aqlLtpdCrosshairPlugin]
+        });
+    }
+
+    // Event listeners for AQL-LTPD page
+    if (aqlLtpdElements.calculateBtn) {
+        aqlLtpdElements.calculateBtn.addEventListener('click', function() {
+            try {
+                // Clear previous errors
+                if (aqlLtpdElements.errorDiv) {
+                    aqlLtpdElements.errorDiv.style.display = 'none';
+                }
+
+                // Get input values
+                const aql = parseFloat(aqlLtpdElements.aqlInput?.value || 1);
+                const ltpd = parseFloat(aqlLtpdElements.ltpdInput?.value || 5);
+                const lotSize = parseInt(aqlLtpdElements.lotSizeInput?.value || 1000);
+                const distribution = aqlLtpdElements.distSelect?.value || 'binom';
+                const optimization = aqlLtpdElements.optimizationSelect?.value || 'minimize_n';
+                const alpha = parseFloat(aqlLtpdElements.alphaInput?.value || 0.05);
+                const beta = parseFloat(aqlLtpdElements.betaInput?.value || 0.10);
+
+                // Calculate optimal plan
+                const plan = calculateOptimalAqlLtpdPlan(aql, ltpd, lotSize, distribution, optimization, alpha, beta);
+
+                if (!plan) {
+                    throw new Error('No feasible plan found. Try adjusting AQL, LTPD, or risk constraints.');
+                }
+
+                // Update results
+                if (aqlLtpdElements.resultN) aqlLtpdElements.resultN.value = plan.n;
+                if (aqlLtpdElements.resultC) aqlLtpdElements.resultC.value = plan.c;
+                // Calculate plan efficiency
+                const efficiency = calculatePlanEfficiency(plan, 1 - alpha, beta, alpha, beta);
+                if (aqlLtpdElements.efficiency) aqlLtpdElements.efficiency.value = (efficiency * 100).toFixed(1) + '%';
+                if (aqlLtpdElements.aqlPa) aqlLtpdElements.aqlPa.value = (plan.paAql * 100).toFixed(1) + '%';
+                if (aqlLtpdElements.ltpdPa) aqlLtpdElements.ltpdPa.value = (plan.paLtpd * 100).toFixed(1) + '%';
+                if (aqlLtpdElements.actualAlpha) aqlLtpdElements.actualAlpha.value = (plan.actualAlpha * 100).toFixed(1) + '%';
+                if (aqlLtpdElements.actualBeta) aqlLtpdElements.actualBeta.value = (plan.actualBeta * 100).toFixed(1) + '%';
+
+                // Calculate additional metrics
+                const aoql = calculateAOQL(plan.n, plan.c, aql / 100, lotSize, distribution);
+                const asn = calculateASN(plan.n, plan.c, aql / 100, lotSize, distribution);
+                
+                if (aqlLtpdElements.aoql) aqlLtpdElements.aoql.value = (aoql * 100).toFixed(3) + '%';
+                if (aqlLtpdElements.asn) aqlLtpdElements.asn.value = asn;
+                
+                // Calculate efficiency rating and improvement suggestions
+                const { rating, suggestions } = calculateEfficiencyRatingAndSuggestions(plan, efficiency, alpha, beta, aql, ltpd, lotSize);
+                if (aqlLtpdElements.efficiencyRating) aqlLtpdElements.efficiencyRating.value = rating;
+                if (aqlLtpdElements.improvements) aqlLtpdElements.improvements.value = suggestions;
+
+                // Update notes
+                if (aqlLtpdElements.notes) {
+                    aqlLtpdElements.notes.textContent = `Optimal plan calculated using ${optimization.replace('_', ' ')} strategy.`;
+                }
+
+                // Store plan and update chart
+                aqlLtpdLastPlan = plan;
+                updateAqlLtpdChart(plan);
+
+            } catch (error) {
+                if (aqlLtpdElements.errorDiv) {
+                    aqlLtpdElements.errorDiv.textContent = error.message;
+                    aqlLtpdElements.errorDiv.style.display = 'block';
+                }
+            }
+        });
+    }
+
+    if (aqlLtpdElements.clearBtn) {
+        aqlLtpdElements.clearBtn.addEventListener('click', function() {
+            // Reset inputs to defaults
+            if (aqlLtpdElements.aqlInput) aqlLtpdElements.aqlInput.value = '1.0';
+            if (aqlLtpdElements.ltpdInput) aqlLtpdElements.ltpdInput.value = '5.0';
+            if (aqlLtpdElements.lotSizeInput) aqlLtpdElements.lotSizeInput.value = '1000';
+            if (aqlLtpdElements.distSelect) aqlLtpdElements.distSelect.value = 'binom';
+            if (aqlLtpdElements.optimizationSelect) aqlLtpdElements.optimizationSelect.value = 'minimize_n';
+            if (aqlLtpdElements.alphaInput) aqlLtpdElements.alphaInput.value = '0.05';
+            if (aqlLtpdElements.betaInput) aqlLtpdElements.betaInput.value = '0.10';
+            if (aqlLtpdElements.xMaxInput) aqlLtpdElements.xMaxInput.value = '10';
+
+            // Clear results
+            const resultElements = [aqlLtpdElements.resultN, aqlLtpdElements.resultC, aqlLtpdElements.efficiency,
+                aqlLtpdElements.aqlPa, aqlLtpdElements.ltpdPa, aqlLtpdElements.actualAlpha, aqlLtpdElements.actualBeta,
+                aqlLtpdElements.aoql, aqlLtpdElements.asn, aqlLtpdElements.efficiencyRating, aqlLtpdElements.improvements];
+            resultElements.forEach(el => { if (el) el.value = '-'; });
+
+            // Clear chart
+            if (aqlLtpdChart) {
+                aqlLtpdChart.destroy();
+                aqlLtpdChart = null;
+            }
+
+            // Clear error and notes
+            if (aqlLtpdElements.errorDiv) aqlLtpdElements.errorDiv.style.display = 'none';
+            if (aqlLtpdElements.notes) aqlLtpdElements.notes.textContent = 'Enter AQL and LTPD values to calculate the optimal sampling plan.';
+
+            aqlLtpdLastPlan = null;
+        });
+    }
+
+    // X-axis max change handler
+    if (aqlLtpdElements.xMaxInput) {
+        aqlLtpdElements.xMaxInput.addEventListener('input', function() {
+            if (aqlLtpdLastPlan) {
+                updateAqlLtpdChart(aqlLtpdLastPlan);
+            }
+        });
+    }
+
+    // Export functionality
+    if (aqlLtpdElements.exportPngBtn) {
+        aqlLtpdElements.exportPngBtn.addEventListener('click', function() {
+            if (aqlLtpdChart) {
+                exportChartHiRes(aqlLtpdChart, 'aql_ltpd_balanced_plan');
+            }
+        });
+    }
+
+    if (aqlLtpdElements.exportCsvBtn) {
+        aqlLtpdElements.exportCsvBtn.addEventListener('click', function() {
+            if (aqlLtpdChart && aqlLtpdLastPlan) {
+                let csv = 'x_defect_rate_percent,y_acceptance_prob,n,c,aql,ltpd,alpha,beta,distribution,optimization_target\n';
+                aqlLtpdChart.data.datasets[0].data.forEach(point => {
+                    csv += `${point.x},${point.y},${aqlLtpdLastPlan.n},${aqlLtpdLastPlan.c},${aqlLtpdElements.aqlInput?.value || 1},${aqlLtpdElements.ltpdInput?.value || 5},${aqlLtpdElements.alphaInput?.value || 0.05},${aqlLtpdElements.betaInput?.value || 0.10},${aqlLtpdElements.distSelect?.value || 'binom'},${aqlLtpdElements.optimizationSelect?.value || 'minimize_n'}\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'aql_ltpd_balanced_plan.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        });
+    }
+
+    if (aqlLtpdElements.exportPlanBtn) {
+        aqlLtpdElements.exportPlanBtn.addEventListener('click', function() {
+            if (!aqlLtpdLastPlan) {
+                alert('No plan to export. Please calculate first.');
+                return;
+            }
+            window.planComparisonQueue = window.planComparisonQueue || [];
+            const distName = aqlLtpdElements.distSelect?.value === 'hyper' ? 'Hypergeometric' : 
+                           (aqlLtpdElements.distSelect?.value === 'pois' ? 'Poisson' : 'Binomial');
+            const label = `AQL-LTPD n=${aqlLtpdLastPlan.n}, c=${aqlLtpdLastPlan.c} (${distName})`;
+            window.planComparisonQueue.push({
+                n: aqlLtpdLastPlan.n,
+                c: aqlLtpdLastPlan.c,
+                aql: parseFloat(aqlLtpdElements.aqlInput?.value || 1),
+                label: label,
+                dist: aqlLtpdElements.distSelect?.value || 'binom',
+                N: parseInt(aqlLtpdElements.lotSizeInput?.value || 1000),
+                // Include efficiency calculation data for consistent rating
+                paAql: aqlLtpdLastPlan.paAql,
+                paLtpd: aqlLtpdLastPlan.paLtpd,
+                actualAlpha: aqlLtpdLastPlan.actualAlpha,
+                actualBeta: aqlLtpdLastPlan.actualBeta,
+                source: 'aql_ltpd'
+            });
+            alert('Plan exported to Multiple Plan Comparison queue.');
+        });
     }
 
     // Initialize systems when page loads
