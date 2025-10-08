@@ -178,6 +178,28 @@
         background: linear-gradient(135deg, 
             rgba(0,0,0,0.12), 
             rgba(0,0,0,0.06));
+    color: var(--text);
+    text-shadow: none;
+    }
+    
+    /* Light theme active tab contrast fix */
+    [data-theme="light"] .tab.active,
+    [data-theme="light-blue"] .tab.active,
+    [data-theme="light-yellow"] .tab.active,
+    [data-theme="light-pink"] .tab.active {
+        color: var(--text);
+        text-shadow: none;
+        border: 1px solid var(--border);
+    }
+    
+    /* Light theme active tab hover contrast fix */
+    [data-theme="light"] .tab.active:hover,
+    [data-theme="light-blue"] .tab.active:hover,
+    [data-theme="light-yellow"] .tab.active:hover,
+    [data-theme="light-pink"] .tab.active:hover {
+        color: var(--text);
+        text-shadow: none;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.4);
     }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: 'Noto Sans TC', 'Montserrat', system-ui, -apple-system, sans-serif; color: var(--text); background: radial-gradient(1200px 800px at 30% -10%, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 60%); transition: background 0.3s ease, color 0.3s ease; }
@@ -1446,20 +1468,46 @@
         const colors = getThemeColors();
         
         // Update existing charts
-        [ocChart, planChart, revChart, ssChart].forEach(chart => {
+        [ocChart, planChart, revChart, ssChart, c0Chart, aqlLtpdChart].forEach(chart => {
             if (chart && chart.options) {
                 // Update legend color
                 if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) {
                     chart.options.plugins.legend.labels.color = colors.text;
                 }
+                // Update title color if present
+                if (chart.options.plugins && chart.options.plugins.title) {
+                    chart.options.plugins.title.color = colors.text;
+                }
                 
-                // Update grid colors
+                // Update grid, axis title, tick label, and axis border colors
                 if (chart.options.scales) {
-                    if (chart.options.scales.x && chart.options.scales.x.grid) {
-                        chart.options.scales.x.grid.color = colors.grid;
+                    if (chart.options.scales.x) {
+                        if (chart.options.scales.x.grid) {
+                            chart.options.scales.x.grid.color = colors.grid;
+                        }
+                        if (chart.options.scales.x.title) {
+                            chart.options.scales.x.title.color = colors.text;
+                        }
+                        if (chart.options.scales.x.ticks) {
+                            chart.options.scales.x.ticks.color = colors.text;
+                        }
+                        if (chart.options.scales.x.border) {
+                            chart.options.scales.x.border.color = colors.grid;
+                        }
                     }
-                    if (chart.options.scales.y && chart.options.scales.y.grid) {
-                        chart.options.scales.y.grid.color = colors.grid;
+                    if (chart.options.scales.y) {
+                        if (chart.options.scales.y.grid) {
+                            chart.options.scales.y.grid.color = colors.grid;
+                        }
+                        if (chart.options.scales.y.title) {
+                            chart.options.scales.y.title.color = colors.text;
+                        }
+                        if (chart.options.scales.y.ticks) {
+                            chart.options.scales.y.ticks.color = colors.text;
+                        }
+                        if (chart.options.scales.y.border) {
+                            chart.options.scales.y.border.color = colors.grid;
+                        }
                     }
                 }
                 
@@ -1665,8 +1713,8 @@
                 }
             },
             scales: {
-                x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, max: xMaxInit, grid: { color: getThemeColors().grid } },
-                y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
+                x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)', color: getThemeColors().text }, max: xMaxInit, grid: { color: getThemeColors().grid }, ticks: { color: getThemeColors().text } },
+                y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)', color: getThemeColors().text }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; }, color: getThemeColors().text }, grid: { color: getThemeColors().grid } }
             }
         },
         plugins: [ocCrosshairPlugin]
@@ -1831,9 +1879,9 @@
         if (planChart) return planChart;
         var legendLabels = { color: getThemeColors().text, filter: function(item, chart){ var ds = chart.datasets && chart.datasets[item.datasetIndex]; return !(ds && ds.type==='scatter'); } };
         var plugins = { legend: { display: true, labels: legendLabels } };
-        var xScale = { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, grid: { color: getThemeColors().grid } };
+        var xScale = { type: 'linear', title: { display: true, text: 'Defect Rate (p%)', color: getThemeColors().text }, grid: { color: getThemeColors().grid }, ticks: { color: getThemeColors().text } };
         var yTicks = { callback: function(v){ return (v*100).toFixed(0)+'%'; } };
-        var yScale = { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: yTicks, grid: { color: getThemeColors().grid } };
+        var yScale = { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)', color: getThemeColors().text }, ticks: Object.assign({}, yTicks, { color: getThemeColors().text }), grid: { color: getThemeColors().grid } };
         var scales = { x: xScale, y: yScale };
         // crosshair and tooltip: enable tooltip for all datasets
         plugins.tooltip = {
@@ -2323,8 +2371,8 @@
                     }
                 },
                 scales: {
-                    x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, grid: { color: getThemeColors().grid } },
-                    y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
+                    x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)', color: getThemeColors().text }, grid: { color: getThemeColors().grid }, ticks: { color: getThemeColors().text }, border: { color: getThemeColors().grid } },
+                    y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)', color: getThemeColors().text }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; }, color: getThemeColors().text }, grid: { color: getThemeColors().grid }, border: { color: getThemeColors().grid } }
                 }
             },
             plugins: [revCrosshairPlugin]
@@ -2750,8 +2798,8 @@
                     }
                 },
                 scales: {
-                    x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)' }, grid: { color: getThemeColors().grid } },
-                    y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)' }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; } }, grid: { color: getThemeColors().grid } }
+                    x: { type: 'linear', title: { display: true, text: 'Defect Rate (p%)', color: getThemeColors().text }, grid: { color: getThemeColors().grid }, ticks: { color: getThemeColors().text } },
+                    y: { min: 0, max: 1, title: { display: true, text: 'Acceptance Probability (Pa%)', color: getThemeColors().text }, ticks: { callback: function(v){ return (v*100).toFixed(0)+'%'; }, color: getThemeColors().text }, grid: { color: getThemeColors().grid } }
                 }
             },
             plugins: [c0CrosshairPlugin]
@@ -3044,8 +3092,8 @@
                     }
                 }
             },
-            scales:{ x:{ type:'linear', title:{ display:true, text:'Defect Rate (p%)' }, grid:{ color: getThemeColors().grid } },
-                    y:{ min:0, max:1, title:{ display:true, text:'Acceptance Probability (Pa%)' }, ticks:{ callback:function(v){ return (v*100).toFixed(0)+'%'; } }, grid:{ color: getThemeColors().grid } } }
+                scales:{ x:{ type:'linear', title:{ display:true, text:'Defect Rate (p%)', color: getThemeColors().text }, grid:{ color: getThemeColors().grid }, ticks:{ color: getThemeColors().text } },
+                    y:{ min:0, max:1, title:{ display:true, text:'Acceptance Probability (Pa%)', color: getThemeColors().text }, ticks:{ callback:function(v){ return (v*100).toFixed(0)+'%'; }, color: getThemeColors().text }, grid:{ color: getThemeColors().grid } } }
         }, plugins: [ssCrosshairPlugin]});
         return ssChart;
     }
@@ -4354,7 +4402,9 @@
                             text: 'Defect Rate (%)',
                             color: getThemeColors().text
                         },
-                        grid: { color: getThemeColors().grid }
+                        grid: { color: getThemeColors().grid },
+                        ticks: { color: getThemeColors().text },
+                        border: { color: getThemeColors().grid }
                     },
                     y: {
                         min: 0,
@@ -4365,9 +4415,11 @@
                             color: getThemeColors().text
                         },
                         ticks: {
-                            callback: function(v) { return (v * 100).toFixed(0) + '%'; }
+                            callback: function(v) { return (v * 100).toFixed(0) + '%'; },
+                            color: getThemeColors().text
                         },
-                        grid: { color: getThemeColors().grid }
+                        grid: { color: getThemeColors().grid },
+                        border: { color: getThemeColors().grid }
                     }
                 }
             },
