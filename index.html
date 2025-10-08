@@ -1098,19 +1098,19 @@
                     <div class="panel">
                         <h3>Parameters</h3>
                         <div class="parameters">
-                            <div class="group"><label>Lot Size (N)</label><input id="ss_lot_size" type="number" value="500"></div>
+                            <div class="group"><label>Lot Size (N)</label><input id="ss_lot_size" type="number" value="10000"></div>
                             <div class="group"><label>Inspection Level</label>
                                 <select id="ss_inspection_level"></select>
                             </div>
                             <div class="group"><label>AQL</label>
-                                <select id="ss_aql"></select>
+                                <select id="ss_aql" data-default="0.4"></select>
                             </div>
                             <div class="group" style="grid-column: 1 / span 2;"><label>Custom AQL (%)</label><input id="ss_aql_custom" type="number" step="0.01" value="1.0" disabled></div>
                             <div class="group" style="grid-column: 1 / span 2;"><label>Inspection State</label>
                                 <select id="ss_state_select">
-                                    <option value="normal" selected>Normal</option>
+                                    <option value="normal">Normal</option>
                                     <option value="tightened">Tightened</option>
-                                    <option value="reduced">Reduced</option>
+                                    <option value="reduced" selected>Reduced</option>
                                 </select>
                             </div>
                             <div class="group" style="grid-column: 1 / span 2;"><label>Distribution</label>
@@ -2727,7 +2727,11 @@
         custom.value = 'custom';
         custom.textContent = 'Custom';
         c0AqlSel.appendChild(custom);
-        c0AqlSel.value = keys.includes('1.0') ? '1.0' : (keys[0] ?? 'custom');
+        // Prefer a 0.4 numeric default if present; fall back to 1.0 or first
+        const desiredNumC0 = 0.4;
+        let desiredKeyC0 = keys.find(k => Math.abs(parseFloat(k) - desiredNumC0) < 1e-9);
+        if (!desiredKeyC0) desiredKeyC0 = keys.includes('1.0') ? '1.0' : (keys[0] ?? 'custom');
+        c0AqlSel.value = desiredKeyC0;
         c0AqlCustomEl.disabled = c0AqlSel.value !== 'custom';
     }
 
@@ -3025,7 +3029,11 @@
         ssAqlSel.innerHTML='';
         keys.forEach(k => { const o=document.createElement('option'); o.value=k; o.textContent=k; ssAqlSel.appendChild(o); });
         const custom = document.createElement('option'); custom.value='custom'; custom.textContent='Custom'; ssAqlSel.appendChild(custom);
-        ssAqlSel.value = keys.includes('1.0')?'1.0':(keys[0]||'custom');
+        const desiredAttr = ssAqlSel.getAttribute('data-default') || '0.4';
+        const desiredNum = parseFloat(desiredAttr);
+        let desiredKey = keys.find(k => Math.abs(parseFloat(k) - desiredNum) < 1e-9);
+        if (!desiredKey) desiredKey = keys.includes('1.0') ? '1.0' : (keys[0] || 'custom');
+        ssAqlSel.value = desiredKey;
         ssAqlCustomEl.disabled = ssAqlSel.value !== 'custom';
     }
     function ensureSsChart() {
