@@ -3049,6 +3049,25 @@
                  label: 'Normal' };
     }
     function getSampleSizeFromCode(code) { const r=getStateRefs(); return r.sizes?.[code] || null; }
+    function getValueByNumericAqlKey(rowObj, aqlStr){
+        if (!rowObj) return undefined;
+        if (aqlStr in rowObj) return rowObj[aqlStr];
+        const target = parseFloat(aqlStr);
+        if (!isFinite(target)) return undefined;
+        // tolerant numeric equivalence match (handles '0.4' vs '0.40' etc.)
+        let bestKey; let bestDelta = Infinity;
+        for (const k in rowObj){
+            const v = parseFloat(k);
+            if (!isFinite(v)) continue;
+            const d = Math.abs(v - target);
+            if (d < bestDelta){ bestDelta = d; bestKey = k; }
+        }
+        // exact numeric equality within tiny epsilon
+        if (bestKey!=null && Math.abs(parseFloat(bestKey) - target) < 1e-12) return rowObj[bestKey];
+        // also accept near-equality for common rounding mismatches
+        if (bestKey!=null && Math.abs(parseFloat(bestKey) - target) < 1e-6) return rowObj[bestKey];
+        return undefined;
+    }
     function normalizeAcReCell(cell, isReduced){
         if (cell==null) return null;
         if (typeof cell==='number') {
@@ -3067,7 +3086,7 @@
         let currentIndex = refs.order.indexOf(initialLetter);
         if (currentIndex === -1) return { finalLetter: null, finalAc: null };
         let currentLetter = initialLetter;
-        let plan = refs.table[currentLetter]?.[aqlStr];
+        let plan = getValueByNumericAqlKey(refs.table[currentLetter], aqlStr);
         const visited = new Set([currentLetter]);
         while (plan === 'down' || plan === 'up') {
             currentIndex += (plan === 'down' ? 1 : -1);
@@ -3075,7 +3094,7 @@
             currentLetter = refs.order[currentIndex];
             if (visited.has(currentLetter)) return { finalLetter: null, finalAc: null };
             visited.add(currentLetter);
-            plan = refs.table[currentLetter]?.[aqlStr];
+            plan = getValueByNumericAqlKey(refs.table[currentLetter], aqlStr);
         }
         // allow number or {ac,re}
         const norm = normalizeAcReCell(plan, (ssStateSel?.value==='reduced'));
