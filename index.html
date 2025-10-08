@@ -186,12 +186,18 @@
     header h1 { margin: 0 0 6px 0; font-size: 2rem; }
     header p { margin: 0; color: var(--muted); font-size: 0.75rem; opacity: 0.7; letter-spacing: 0.3px; }
 
-    /* Tabs with Liquid Glass Effect */
+    /* Layout wrapper to place sidebar (tabs) left of pages */
+    .main-layout { display: flex; gap: 16px; align-items: flex-start; }
+    .sidebar { width: 260px; flex: 0 0 260px; position: sticky; top: 12px; align-self: flex-start; margin-top: 120px; }
+    .pages { flex: 1 1 auto; min-width: 0; }
+
+    /* Tabs with Liquid Glass Effect (vertical in sidebar) */
     .tabs { 
         display: flex; 
-        gap: 12px; 
-        justify-content: center; 
-        margin: 10px 0 12px 0; 
+        flex-direction: column;
+        gap: 10px; 
+        justify-content: flex-start; 
+        margin: 0; 
         padding: 0;
         background: none;
         backdrop-filter: none;
@@ -210,9 +216,9 @@
         color: var(--text); 
         font-weight: 600;
         font-size: 0.9rem;
-        padding: 10px 18px;
+        padding: 15px 18px;
         text-shadow: 0 1px 3px rgba(0,0,0,0.3); 
-        border-radius: 15px; 
+        border-radius: 8px; 
         cursor: pointer; 
         box-shadow: 
             0 4px 20px rgba(0,0,0,0.1),
@@ -221,7 +227,13 @@
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+        white-space: nowrap; 
+        text-align: center;
     }
+
+    /* Ensure tabs fill sidebar width and content width remains unchanged by adding sidebar width to container */
+    .tabs .tab { width: 100%; }
+    .app { max-width: calc(1200px + 260px + 16px); }
     
     .tab::before {
         content: '';
@@ -280,6 +292,16 @@
             rgba(52, 152, 219, 0.8), 
             transparent);
         border-radius: 1px;
+    }
+
+    /* Ensure active tab shows the same hover animation/effects */
+    .tab.active:hover::before { left: 100%; }
+    .tab.active:hover {
+        transform: translateY(-3px) scale(1.05);
+        background: linear-gradient(135deg, rgba(52,152,219,0.25), rgba(52,152,219,0.15));
+        box-shadow: 0 8px 30px rgba(52,152,219,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
+        color: #ffffff;
+        text-shadow: 0 1px 3px rgba(52,152,219,0.8);
     }
 
     /* Liquid Glass Button Effect */
@@ -389,8 +411,8 @@
         position: relative; 
         color: var(--text);
         text-shadow: 0 1px 2px rgba(0,0,0,0.3); 
-        border-radius: 16px; 
-        padding: 12px 18px; 
+        border-radius: 8px; 
+        padding: 18px 18px; 
         font-weight: 600; 
         cursor: pointer; 
         border: 1px solid var(--border);
@@ -589,7 +611,7 @@
     .right { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
     .chart-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; height: var(--chart-h); }
     .chart-toolbar { display: flex; gap: 8px; align-items: center; }
-    .chart { flex: 1 1 auto; min-height: 0; }
+    .chart { flex: 1 1 auto; min-height: 0; height: 100%; aspect-ratio: 4 / 3; width: auto; max-width: 100%; margin: 0 auto; }
     .chart canvas { width: 100% !important; height: 100% !important; }
 
     /* Sections */
@@ -850,14 +872,18 @@
             <h1>Advanced Sampling Plan Analyzer</h1>
             <p>Developed by Chun-Chieh Chang (wesleychang2025@gmail.com). All Rights Reserved.</p>
         </header>
-        <nav class="tabs">
-            <div class="tab active" data-target="distribution">Probability Distribution</div>
-            <div class="tab" data-target="plan">Multiple Plan Comparison</div>
-            <div class="tab" data-target="reverse">Reverse Sampling Query</div>
-            <div class="tab" data-target="kaiyi">AQL Plan Table Lookup</div>
-            <div class="tab" data-target="c0">C=0 Plan Table Lookup</div>
-            <div class="tab" data-target="aql-ltpd">AQL-LTPD Balanced Plan</div>
-        </nav>
+        <div class="main-layout">
+            <aside class="sidebar">
+                <nav class="tabs">
+                    <div class="tab active" data-target="distribution">Probability Distribution</div>
+                    <div class="tab" data-target="plan">Multiple Plan Comparison</div>
+                    <div class="tab" data-target="reverse">Reverse Sampling Query</div>
+                    <div class="tab" data-target="kaiyi">AQL Plan Table Lookup</div>
+                    <div class="tab" data-target="c0">C=0 Plan Table Lookup</div>
+                    <div class="tab" data-target="aql-ltpd">AQL-LTPD Balanced Plan</div>
+                </nav>
+            </aside>
+            <div class="pages">
 
         <!-- Distribution Page -->
         <section id="section-distribution" class="section active">
@@ -1327,6 +1353,8 @@
                 </main>
             </div>
         </section>
+            </div>
+        </div>
     </div>
 
     <!-- Tutorial Modal -->
