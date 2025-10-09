@@ -962,6 +962,7 @@
                         <div class="chart-toolbar">
                             <button class="btn" id="export_png">Export PNG</button>
                             <button class="btn" id="export_csv">Export Data</button>
+                            <button class="btn" data-help-for="distribution" title="使用說明">Help</button>
                             <div style="margin-left:auto" class="btn-row">
                                 <label style="color:var(--text); font-size:0.9em;">Defect Rate Max (%)</label>
                                 <input id="x_max" type="number" value="5" title="Defect Rate Max (%)" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
@@ -1021,6 +1022,7 @@
                             <button class="btn" id="plan_export_png">Export PNG</button>
                             <button class="btn" id="plan_export_csv">Export Data</button>
                             <button class="btn" id="plan_import_btn">Import from pages</button>
+                            <button class="btn" data-help-for="plan" title="使用說明">Help</button>
                             <div style="margin-left:auto" class="btn-row">
                                 <label style="color:var(--text); font-size:0.9em;">Defect Rate Max (%)</label>
                                 <input id="plan_x_axis_max_input" type="number" value="5" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
@@ -1079,6 +1081,7 @@
                             <button class="btn" id="rev_export_png">Export PNG</button>
                             <button class="btn" id="rev_export_csv">Export Data</button>
                             <button class="btn" id="rev_export_plan">Export to Plan Comparison</button>
+                            <button class="btn" data-help-for="reverse" title="使用說明">Help</button>
                             <div style="margin-left:auto" class="btn-row">
                                 <label style="color:var(--text); font-size:0.9em;">Defect Rate Max (%)</label>
                                 <input id="rev_x_max" type="number" value="5" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
@@ -1151,6 +1154,7 @@
                             <button class="btn" id="ss_export_png">Export PNG</button>
                             <button class="btn" id="ss_export_csv">Export Data</button>
                             <button class="btn" id="ss_export_plan">Export to Plan Comparison</button>
+                            <button class="btn" data-help-for="kaiyi" title="使用說明">Help</button>
                             <div style="margin-left:auto" class="btn-row">
                                 <label style="color:var(--text); font-size:0.9em;">Defect Rate Max (%)</label>
                                 <input id="ss_x_max" type="number" value="5" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
@@ -1210,6 +1214,7 @@
                             <button class="btn" id="c0_export_png_toolbar">Export PNG</button>
                             <button class="btn" id="c0_export_csv_toolbar">Export Data</button>
                             <button class="btn" id="c0_export_plan">Export to Plan Comparison</button>
+                            <button class="btn" data-help-for="c0" title="使用說明">Help</button>
                             <div style="margin-left:auto" class="btn-row">
                                 <label style="color:var(--text); font-size:0.9em;">Defect Rate Max (%)</label>
                                 <input id="c0_x_max" type="number" value="5" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
@@ -1363,6 +1368,7 @@
                             <button class="btn" id="aql_ltpd_export_png_toolbar">Export PNG</button>
                             <button class="btn" id="aql_ltpd_export_csv_toolbar">Export Data</button>
                             <button class="btn" id="aql_ltpd_export_plan">Export to Plan Comparison</button>
+                            <button class="btn" data-help-for="aql-ltpd" title="使用說明">Help</button>
                             <div style="margin-left:auto" class="btn-row">
                                 <label style="color:var(--text); font-size:0.9em;">Defect Rate Max (%)</label>
                                 <input id="aql_ltpd_x_max" type="number" value="10" style="width:80px; text-align:center; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 8px;">
@@ -4601,7 +4607,107 @@
     document.addEventListener('DOMContentLoaded', function() {
         initThemeSystem();
         initTutorial();
+        initHelpSystem();
     });
+
+    // ===== Unified Help System =====
+    function initHelpSystem(){
+        var helpModal = document.getElementById('help-modal');
+        if (!helpModal){
+            // create modal lazily if not present
+            var wrap = document.createElement('div');
+            wrap.id = 'help-modal';
+            wrap.style.display = 'none';
+            wrap.style.position = 'fixed';
+            wrap.style.inset = '0';
+            wrap.style.zIndex = '9999';
+            wrap.style.alignItems = 'center';
+            wrap.style.justifyContent = 'center';
+            wrap.innerHTML = '\n                <div class="tutorial-overlay" style="position:absolute; inset:0; background:rgba(0,0,0,0.5);"></div>\n                <div class="tutorial-content" style="position:relative; max-width:900px; width:90%; background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.35); overflow:hidden;">\n                    <div class="tutorial-header" style="display:flex; align-items:center; justify-content:space-between;">\n                        <h2 style="margin:0; font-size:1.3rem;">使用說明</h2>\n                        <div>\n                            <button class="btn" id="help-close-btn">Close</button>\n                        </div>\n                    </div>\n                    <div style="padding:18px 24px 8px; border-bottom:1px solid var(--border);">\n                        <div id="help-tabs" style="display:flex; gap:8px; flex-wrap:wrap;"></div>\n                    </div>\n                    <div id="help-content" style="padding:18px 24px; max-height:60vh; overflow:auto;"></div>\n                </div>';
+            document.body.appendChild(wrap);
+            helpModal = wrap;
+        }
+        var helpTabs = document.getElementById('help-tabs');
+        var helpContent = document.getElementById('help-content');
+        var closeBtn = document.getElementById('help-close-btn');
+        var overlay = helpModal.querySelector('.tutorial-overlay');
+        function close(){ helpModal.style.display='none'; document.body.style.overflow=''; }
+        function open(){ helpModal.style.display='flex'; document.body.style.overflow='hidden'; }
+        closeBtn && closeBtn.addEventListener('click', close);
+        overlay && overlay.addEventListener('click', close);
+
+        var helpData = {
+            'distribution': {
+                tabs: ['概述','輸入參數','輸出與圖表','使用時機'],
+                sections: [
+                    '<p>此頁用於比較超幾何、二項、卜瓦松三種分佈下，同一抽樣計畫的OC/AOQ/ATI行為。</p>',
+                    '<ul><li>N: 批量大小 (Hypergeometric 必填)</li><li>n: 抽樣數</li><li>c: 可接受不良數</li><li>AQL(%): 可接受品質水準</li><li>x軸上限(%): 缺點率顯示範圍</li></ul>',
+                    '<ul><li>OC曲線: y=Pa(接受機率)</li><li>AOQ曲線: 平均輸出品質(%)</li><li>ATI曲線: 平均總檢數</li><li>匯出: PNG/CSV</li></ul>',
+                    '<ul><li>比較不同分佈假設的影響</li><li>想快速檢視AQL標記位置與曲線陡峭度</li></ul>'
+                ]
+            },
+            'plan': {
+                tabs: ['概述','輸入參數','輸出與圖表','使用時機'],
+                sections: [
+                    '<p>疊加多個抽樣計畫以視覺化比較OC/AOQ/ATI。</p>',
+                    '<ul><li>n, c, AQL(%), 標籤、x軸上限</li></ul>',
+                    '<ul><li>曲線清單與圖例、AQL標記</li><li>支援PNG/CSV、從各頁匯入</li></ul>',
+                    '<ul><li>方案評比、向利害關係人展示差異</li></ul>'
+                ]
+            },
+            'reverse': {
+                tabs: ['概述','輸入參數','輸出與圖表','使用時機'],
+                sections: [
+                    '<p>固定三個參數，反解剩餘一個 (AQL、n、c、N、或目標Pa)。</p>',
+                    '<ul><li>目標參數、N、n、c、AQL(%)、目標Pa(%)、分佈</li></ul>',
+                    '<ul><li>計算所得計畫 (n,c) 與OC圖</li><li>可匯出至比較頁</li></ul>',
+                    '<ul><li>當有既定風險點(如AQL95%)，想求合適n或c</li></ul>'
+                ]
+            },
+            'kaiyi': {
+                tabs: ['概述','輸入參數','輸出與圖表','使用時機'],
+                sections: [
+                    '<p>依 ANSI/ASQ Z1.4 進行AQL抽樣表查詢。</p>',
+                    '<ul><li>N、AQL、檢驗水準、檢驗狀態(正常/放寬/加嚴)</li></ul>',
+                    '<ul><li>輸出代碼字母、樣本量、Ac/Re、及在AQL的Pa/Pr/Pc</li><li>OC圖與匯出</li></ul>',
+                    '<ul><li>需遵循標準抽樣制度時</li></ul>'
+                ]
+            },
+            'c0': {
+                tabs: ['概述','輸入參數','輸出與輸出','使用時機'],
+                sections: [
+                    '<p>查詢 C=0 (零接受) 抽樣表 (Squeglia)。</p>',
+                    '<ul><li>N、AQL或自定AQL、分佈</li></ul>',
+                    '<ul><li>輸出 n、c=0、對應LTPD@Pa=10% 等</li></ul>',
+                    '<ul><li>高風險關鍵缺陷、嚴格把關場景</li></ul>'
+                ]
+            },
+            'aql-ltpd': {
+                tabs: ['概述','輸入參數','輸出與圖表','使用時機'],
+                sections: [
+                    '<p>同時滿足AQL與LTPD限制，透過數學最佳化找出計畫。</p>',
+                    '<ul><li>AQL(%)、LTPD(%)、N、分佈、最佳化目標、α/β、x軸上限</li></ul>',
+                    '<ul><li>輸出 n、c、效率分數、AOQL/ASN、OC圖與匯出</li></ul>',
+                    '<ul><li>需在規格化兩端風險間取得平衡時</li></ul>'
+                ]
+            }
+        };
+        function renderHelp(kind){
+            var data = helpData[kind] || helpData['distribution'];
+            // tabs
+            helpTabs.innerHTML = '';
+            data.tabs.forEach(function(t,i){
+                var b = document.createElement('button'); b.className='btn'+(i===0?' primary':''); b.textContent=t; b.addEventListener('click', function(){
+                    Array.from(helpTabs.children).forEach(function(x){ x.classList.remove('primary'); }); b.classList.add('primary'); helpContent.innerHTML = data.sections[i];
+                }); helpTabs.appendChild(b);
+            });
+            helpContent.innerHTML = data.sections[0] || '';
+        }
+        // bind triggers
+        document.querySelectorAll('[data-help-for]').forEach(function(btn){
+            btn.addEventListener('click', function(){ renderHelp(btn.getAttribute('data-help-for')); open(); });
+        });
+    }
 
     </script>
 </body>
