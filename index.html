@@ -1470,8 +1470,29 @@
         };
     }
     
+    // Enhanced theme color function with better contrast
+    function getEnhancedThemeColors() {
+        const theme = document.body.getAttribute('data-theme') || 'dark-teal';
+        const isLightTheme = ['light', 'light-blue', 'light-yellow', 'light-pink'].includes(theme);
+        
+        // Enhanced colors with better contrast for visibility
+        if (isLightTheme) {
+            return {
+                text: '#212529', // Dark text for better contrast
+                grid: 'rgba(0,0,0,0.5)', // Darker grid for visibility
+                background: getCssVar('--panel-2') || getCssVar('--panel') || '#ffffff'
+            };
+        } else {
+            return {
+                text: '#e6e9ee', // Light text for dark themes
+                grid: 'rgba(199,202,207,0.4)', // More visible grid lines
+                background: getCssVar('--panel-2') || getCssVar('--panel') || '#111c26'
+            };
+        }
+    }
+    
     function updateChartColors() {
-        const colors = getThemeColors();
+        const colors = getEnhancedThemeColors();
         
         // Update existing charts
         [ocChart, planChart, revChart, ssChart, c0Chart, aqlLtpdChart].forEach(chart => {
@@ -1810,6 +1831,16 @@
         // Prefer panel-2; fallback to panel; final fallback to a dark tone
         return getCssVar('--panel-2') || getCssVar('--panel') || '#111c26';
     }
+    // Enhanced theme color function for export with consistent dark theme colors
+    function getExportThemeColors() {
+        // Always use dark theme colors for consistent export across all themes
+        return {
+            text: '#e6e9ee', // Light text for better contrast on dark background
+            grid: 'rgba(199,202,207,0.4)', // Visible grid lines
+            background: getUiChartBg()
+        };
+    }
+    
     function exportChartHiRes(chart, baseName){
         if (!chart) return;
         var scale = 3; // reduce memory usage
@@ -1827,13 +1858,17 @@
         }
         var xTitleObj = (((chart.options||{}).scales||{}).x||{}).title || {};
         var yTitleObj = (((chart.options||{}).scales||{}).y||{}).title || {};
+        
+        // Get enhanced export colors
+        const exportColors = getExportThemeColors();
+        
         // plugin to paint full-canvas background before Chart draws (avoids transparent margins)
-        var bgPlugin = { id:'exportBg', beforeDraw: function(c){ var ctx=c.ctx; ctx.save(); ctx.fillStyle = getUiChartBg(); ctx.fillRect(0,0,c.width,c.height); ctx.restore(); } };
+        var bgPlugin = { id:'exportBg', beforeDraw: function(c){ var ctx=c.ctx; ctx.save(); ctx.fillStyle = exportColors.background; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); } };
         var padPx = Math.round(Math.min(offCanvas.width, offCanvas.height) * 0.05);
         var options = { responsive:false, maintainAspectRatio:false, animation:false, devicePixelRatio:1,
             layout:{ padding:{ left:padPx, right:padPx, top:padPx, bottom:padPx } },
-            plugins:{ legend:{ display:true, labels:{ color: getThemeColors().text, font:{ size:12*scale } } }, tooltip:{ enabled:false } },
-            scales:{ x:{ type:'linear', title:{ display: !!xTitleObj.text, text: xTitleObj.text || 'Defect Rate (p%)', font:{ size:12*scale } }, grid:{ color: getThemeColors().grid }, ticks:{ font:{ size:12*scale } } }, y:{ min:0, max:1, title:{ display: !!yTitleObj.text, text: yTitleObj.text || 'Acceptance Probability (Pa%)', font:{ size:12*scale } }, grid:{ color: getThemeColors().grid }, ticks:{ font:{ size:12*scale } } } }, elements:{ line:{ borderWidth:2*scale }, point:{ radius:0 } } };
+            plugins:{ legend:{ display:true, labels:{ color: exportColors.text, font:{ size:12*scale } } }, tooltip:{ enabled:false } },
+            scales:{ x:{ type:'linear', title:{ display: !!xTitleObj.text, text: xTitleObj.text || 'Defect Rate (p%)', color: exportColors.text, font:{ size:12*scale } }, grid:{ color: exportColors.grid }, ticks:{ color: exportColors.text, font:{ size:12*scale } }, border: { color: exportColors.grid } }, y:{ min:0, max:1, title:{ display: !!yTitleObj.text, text: yTitleObj.text || 'Acceptance Probability (Pa%)', color: exportColors.text, font:{ size:12*scale } }, grid:{ color: exportColors.grid }, ticks:{ color: exportColors.text, font:{ size:12*scale } }, border: { color: exportColors.grid } } }, elements:{ line:{ borderWidth:2*scale }, point:{ radius:0 } } };
         var tempChart = null; try { tempChart = new Chart(offCtx, { type: type, data: { datasets: datasets }, options: options, plugins: [bgPlugin] }); } catch(e) {}
         var filename = baseName + '.png';
         if (offCanvas.toBlob) {
