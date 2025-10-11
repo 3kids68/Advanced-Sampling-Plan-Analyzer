@@ -1854,7 +1854,8 @@
         for (var i=0; i<(srcData.datasets?srcData.datasets.length:0); i++){
             var ds = srcData.datasets[i] || {};
             var cleanData = Array.isArray(ds.data) ? ds.data.map(function(p){ return { x: p.x, y: p.y }; }) : [];
-            datasets.push({ label: ds.label || '', data: cleanData, borderColor: ds.borderColor || '#1783FF', backgroundColor: ds.backgroundColor || 'rgba(23,131,255,0.25)', borderWidth: (ds.borderWidth||2)*scale, pointRadius: (ds.pointRadius||0)*scale, tension: ds.tension||0.1 });
+            var pointRadius = ds.type === 'scatter' ? (ds.pointRadius||4)*scale : (ds.pointRadius||0)*scale;
+            datasets.push({ label: ds.label || '', data: cleanData, borderColor: ds.borderColor || '#1783FF', backgroundColor: ds.backgroundColor || 'rgba(23,131,255,0.25)', borderWidth: (ds.borderWidth||2)*scale, pointRadius: pointRadius, tension: ds.tension||0.1 });
         }
         var xTitleObj = (((chart.options||{}).scales||{}).x||{}).title || {};
         var yTitleObj = (((chart.options||{}).scales||{}).y||{}).title || {};
@@ -1865,11 +1866,22 @@
         // plugin to paint full-canvas background before Chart draws (avoids transparent margins)
         var bgPlugin = { id:'exportBg', beforeDraw: function(c){ var ctx=c.ctx; ctx.save(); ctx.fillStyle = exportColors.background; ctx.fillRect(0,0,c.width,c.height); ctx.restore(); } };
         var padPx = Math.round(Math.min(offCanvas.width, offCanvas.height) * 0.05);
+        // Get Y-axis range from original chart
+        var yMin = (((chart.options||{}).scales||{}).y||{}).min;
+        var yMax = (((chart.options||{}).scales||{}).y||{}).max;
+        var yTicksCallback = (((chart.options||{}).scales||{}).y||{}).ticks?.callback;
+        
         var options = { responsive:false, maintainAspectRatio:false, animation:false, devicePixelRatio:1,
             layout:{ padding:{ left:padPx, right:padPx, top:padPx, bottom:padPx } },
             plugins:{ legend:{ display:true, labels:{ color: exportColors.text, font:{ size:12*scale } } }, tooltip:{ enabled:false } },
-            scales:{ x:{ type:'linear', title:{ display: !!xTitleObj.text, text: xTitleObj.text || 'Defect Rate (p%)', color: exportColors.text, font:{ size:12*scale } }, grid:{ color: exportColors.grid }, ticks:{ color: exportColors.text, font:{ size:12*scale } }, border: { color: exportColors.grid } }, y:{ min:0, max:1, title:{ display: !!yTitleObj.text, text: yTitleObj.text || 'Acceptance Probability (Pa%)', color: exportColors.text, font:{ size:12*scale } }, grid:{ color: exportColors.grid }, ticks:{ color: exportColors.text, font:{ size:12*scale } }, border: { color: exportColors.grid } } }, elements:{ line:{ borderWidth:2*scale }, point:{ radius:0 } } };
-        var tempChart = null; try { tempChart = new Chart(offCtx, { type: type, data: { datasets: datasets }, options: options, plugins: [bgPlugin] }); } catch(e) {}
+            scales:{ x:{ type:'linear', title:{ display: !!xTitleObj.text, text: xTitleObj.text || 'Defect Rate (p%)', color: exportColors.text, font:{ size:12*scale } }, grid:{ color: exportColors.grid }, ticks:{ color: exportColors.text, font:{ size:12*scale } }, border: { color: exportColors.grid } }, y:{ min:yMin, max:yMax, title:{ display: !!yTitleObj.text, text: yTitleObj.text || 'Acceptance Probability (Pa%)', color: exportColors.text, font:{ size:12*scale } }, grid:{ color: exportColors.grid }, ticks:{ color: exportColors.text, font:{ size:12*scale }, callback: yTicksCallback }, border: { color: exportColors.grid } } }, elements:{ line:{ borderWidth:2*scale }, point:{ radius:4*scale } } };
+        var tempChart = null; try { 
+            // Handle mixed chart types (line + scatter)
+            var chartConfig = { data: { datasets: datasets }, options: options, plugins: [bgPlugin] };
+            // If we have mixed types, use 'line' as base type
+            chartConfig.type = type;
+            tempChart = new Chart(offCtx, chartConfig); 
+        } catch(e) { console.error('Chart creation error:', e); }
         var filename = baseName + '.png';
         if (offCanvas.toBlob) {
             offCanvas.toBlob(function(blob){ var url = URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download=filename; a.click(); setTimeout(function(){ URL.revokeObjectURL(url); }, 1000); try{ tempChart && tempChart.destroy(); }catch(_){ } }, 'image/png');
@@ -2297,7 +2309,7 @@
         }); 
     }
     if (planXMaxEl) { planXMaxEl.addEventListener('input', function(){ updatePlanChart(currentCurveType); }); }
-    if (planExportPngBtn) { planExportPngBtn.addEventListener('click', function(){ ensurePlanChart(); exportChartHiRes(planChart, 'plan_comparison'); }); }
+    if (planExportPngBtn) { planExportPngBtn.addEventListener('click', function(){ ensurePlanChart(); updatePlanChart(currentCurveType); setTimeout(function(){ exportChartHiRes(planChart, 'plan_comparison'); }, 100); }); }
     if (planExportCsvBtn) { planExportCsvBtn.addEventListener('click', function(){ ensurePlanChart(); var csv='label,x_defect_rate_percent,y_acceptance_prob\n'; for (var di=0; di<planChart.data.datasets.length; di++){ var ds=planChart.data.datasets[di]; if (ds.type==='scatter') continue; for (var pi=0; pi<ds.data.length; pi++){ var p=ds.data[pi]; csv += ds.label+','+p.x+','+p.y+'\n'; } } var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='plan_comparison.csv'; a.click(); URL.revokeObjectURL(url); }); }
     // Initialize plan chart on page load to ensure tooltip works
     if (planCtx) {
