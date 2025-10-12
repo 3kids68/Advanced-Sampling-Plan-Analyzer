@@ -746,6 +746,27 @@ function getThemeColors() {
   - **背景顏色**：根據當前主題動態調整
 - **目的**：確保匯出的圖片在所有主題下都具有良好的可讀性和一致的外觀。
 
+### 12.8.5 圖表顏色函數統一標準（2025-01-09 新增）
+- **問題**：Dark Blue 主題中圖表網格與文字顏色在不同頁面有深淺不一的情況
+- **原因**：圖表初始化時使用 `getThemeColors()`（較暗），主題切換時使用 `getEnhancedThemeColors()`（較亮）
+- **解決方案**：統一所有圖表使用 `getEnhancedThemeColors()` 函數
+- **影響範圍**：
+  - 圖例文字顏色：`plugins.legend.labels.color`
+  - 軸標題顏色：`scales.[x|y].title.color`
+  - 網格線顏色：`scales.[x|y].grid.color`
+  - 刻度標籤顏色：`scales.[x|y].ticks.color`
+  - 軸邊框顏色：`scales.[x|y].border.color`
+- **修改頁面**：
+  - Probability Distribution
+  - AQL Plan Table Lookup
+  - Reverse Sampling Query
+  - C=0 Plan Table Lookup
+  - AQL-LTPD Balanced Plan
+  - Multiple Plan Comparison
+- **顏色對比**：
+  - `getThemeColors()`：text `#c7cacf`，grid `rgba(199,202,207,0.22)`
+  - `getEnhancedThemeColors()`：text `#e6e9ee`，grid `rgba(199,202,207,0.4)`
+
 ## 12.9 文字與換行規範（2025-10-08）
 
 - 分頁按鈕與一般按鈕文字一律不換行：`white-space: nowrap;`，必要時使用 `text-overflow: ellipsis`。
@@ -788,6 +809,7 @@ function getThemeColors() {
 ### 版本記錄
 - 2025-10-09：新增統一 Help 按鈕與使用說明模態；規範放置位置與可及性行為。
 - 2025-10-10：統一匯出 PNG 圖片顏色為深色主題顏色，確保所有主題下匯出圖片的一致性。
+- 2025-01-09：修復 Dark Blue 主題中圖表網格與文字顏色不一致問題，統一使用 `getEnhancedThemeColors()` 函數。
 
 ## 附錄 A：不納入規範的實驗項目
 
