@@ -58,93 +58,82 @@ Purpose: Design optimal sampling plans that simultaneously satisfy both AQL (Acc
 
 ### 4) Mathematical Model & Optimization Algorithm
 
-#### 4.1 Core Calculation Logic
-```javascript
-function calculateOptimalPlan(aql, ltpd, lotSize, distribution, optimizationTarget, alpha, beta) {
-    // 1. Define search space for (n, c) combinations
-    // 2. For each combination, calculate:
-    //    - Pa at AQL point
-    //    - Pa at LTPD point
-    //    - Actual producer's risk (1 - Pa at AQL)
-    //    - Actual consumer's risk (Pa at LTPD)
-    // 3. Apply optimization criteria
-    // 4. Return best (n, c) combination with metrics
-}
+#### 4.1 Operating Characteristic (OC) and Risks
+- Acceptance probability under Binomial model:
+  - `Pa(p | n,c) = \sum_{x=0}^{c} \binom{n}{x} p^x (1-p)^{n-x}`
+- Poisson approximation (large n, small p):
+  - `Pa(p | n,c) = \sum_{x=0}^{c} e^{-np} (np)^x / x!`
+- Hypergeometric (finite lot N, defectives K=round(N·p)):
+  - `Pa(p | n,c) = \sum_{x=0}^{c} [ C(K,x) C(N-K, n-x) / C(N,n) ]`
+- Risks and constraints:
+  - `actualAlpha = 1 - Pa(p_AQL)` must satisfy `actualAlpha ≤ α` (i.e., `Pa(p_AQL) ≥ 1-α)`
+  - `actualBeta = Pa(p_LTPD)` must satisfy `actualBeta ≤ β`
+
+#### 4.2 Search Space and Pruning
+- Enumerate integer `(n,c)` with: `n ∈ [1, n_max]` (default 500), `c ∈ [0, min(n, c_max)]` (small `c_max` like 10 is typical).
+- Optional pre-bounds for `c=0` using inequalities:
+  - From `(1-p_AQL)^n ≥ 1-α` ⇒ `n ≤ ln(1-α)/ln(1-p_AQL)`
+  - From `(1-p_LTPD)^n ≤ β` ⇒ `n ≥ ln(β)/ln(1-p_LTPD)`
+- Early-continue any `(n,c)` if computed `Pa` violates numeric sanity (NaN/∞) after clamping.
+
+#### 4.3 Selection Strategies (Objective)
+- minimize_n: among feasible plans (`actualAlpha ≤ α` and `actualBeta ≤ β`), choose smallest `n` (tie-break by smaller `c`).
+- balance: minimize
+  - `J(n,c) = |Pa_AQL - (1-α)| + |Pa_LTPD - β| + penalty`, with
+  - `penalty = 10·max(0, actualAlpha-α) + 10·max(0, actualBeta-β)` to heavily discourage violations.
+- max_producer: minimize `actualAlpha` (report feasibility separately; if multiple feasible, also minimize `n`, then `c`).
+- max_consumer: minimize `actualBeta` (report feasibility separately; if multiple feasible, also minimize `n`, then `c`).
+
+#### 4.4 Efficiency Metrics (Reporting)
+- AOQ(p) ≈ `p · Pa(p) · (1 - n/N)`; for large `N`, `(1 - n/N) ≈ 1`.
+- AOQL: report peak AOQ across plotted p-grid if required.
+- ASN: for single sampling without reinspection, `ASN ≈ n` (report `n` as proxy).
+- Optional UX score (not for optimization): `E = 1 - |Pa_AQL-(1-α)| - |Pa_LTPD-β| - penalty_norm` in [0,1].
+
+#### 4.5 Numerical Stability & Precision Rules
+- Clamp probabilities to `[0,1]`; guard against NaN/∞.
+- Handle `p=0`: `Pa=1` for any `c ≥ 0`.
+- For very small `p` (e.g., `p < 1e-10`), return `Pa ≈ 1` for binomial CDF to avoid underflow; prefer Poisson when `np` is small.
+- Hypergeometric requires integer `K = round(N·p)` and valid ranges (`0 ≤ n ≤ N`, `0 ≤ K ≤ N`).
+
+#### 4.6 Discrete Enumeration Pseudocode
+```pseudo
+bestPlan = null; bestScore = +∞; feasible = []
+for n in 1..n_max:
+  for c in 0..min(n, c_max):
+    Pa_AQL  = Pa(n,c,p_AQL; dist,N)  // clamp to [0,1]
+    Pa_LTPD = Pa(n,c,p_LTPD; dist,N) // clamp to [0,1]
+    actualAlpha = 1 - Pa_AQL
+    actualBeta  = Pa_LTPD
+
+    switch target:
+      case minimize_n:
+        if actualAlpha≤α and actualBeta≤β: score=n else continue
+      case balance:
+        dev = |Pa_AQL-(1-α)| + |Pa_LTPD-β|
+        penalty = 10·max(0,actualAlpha-α) + 10·max(0,actualBeta-β)
+        score = dev + penalty
+      case max_producer: score = actualAlpha
+      case max_consumer: score = actualBeta
+
+    if actualAlpha≤α and actualBeta≤β:
+      feasible.push({n,c,Pa_AQL,Pa_LTPD,actualAlpha,actualBeta,score})
+    if score < bestScore: bestScore=score; bestPlan={...}
+
+// If minimize_n and feasible non-empty: return plan with minimal n (tie-break by c)
+// Else return bestPlan (may be infeasible; UI should warn)
 ```
 
-#### 4.2 Optimization Strategies
-- **Minimize Sample Size**: Find smallest n that satisfies risk constraints
-- **Balance AQL-LTPD**: Minimize deviation from ideal Pa values (1-α at AQL, β at LTPD)
-- **Maximize Producer Protection**: Minimize actual producer's risk
-- **Maximize Consumer Protection**: Minimize actual consumer's risk
+#### 4.7 Implementation Notes
+- Tie-breaking: prefer smaller `n`, then smaller `c` for equal scores.
+- Parameter bounds: `α, β ∈ (0,1)`, require `AQL < LTPD`.
+- Distribution choice must match chart computation to avoid mismatched OC shapes.
 
-#### 4.3 Search Algorithm
-- **Search Range**: n from 1 to 1000, c from 0 to n
-- **Convergence Criteria**: Stop when risk constraints are satisfied within tolerance
-- **Fallback Strategy**: If no plan satisfies constraints, return closest feasible plan with warnings
-
-#### 4.4 Efficiency Calculation Algorithm (NEW)
-```javascript
-function calculatePlanEfficiency(plan, idealPaAql, idealPaLtpd, alpha, beta) {
-    // Calculate deviations from ideal performance
-    const aqlDeviation = Math.abs(plan.paAql - idealPaAql);
-    const ltpdDeviation = Math.abs(plan.paLtpd - idealPaLtpd);
-    
-    // Penalty for constraint violations
-    let constraintPenalty = 0;
-    if (plan.actualAlpha > alpha) {
-        constraintPenalty += (plan.actualAlpha - alpha) * 2;
-    }
-    if (plan.actualBeta > beta) {
-        constraintPenalty += (plan.actualBeta - beta) * 2;
-    }
-    
-    // Efficiency score (0-1, higher is better)
-    const totalDeviation = aqlDeviation + ltpdDeviation + constraintPenalty;
-    const efficiency = Math.max(0, 1 - totalDeviation);
-    
-    return efficiency;
-}
-```
-
-#### 4.5 Improvement Suggestions Algorithm (NEW)
-```javascript
-function generateImprovementSuggestions(plan, efficiency, alpha, beta, aql, ltpd, lotSize) {
-    const suggestions = [];
-    
-    // Sample size analysis
-    if (plan.n > 200) {
-        suggestions.push("• Consider reducing sample size: Current n=" + plan.n + " is quite large.");
-    } else if (plan.n < 20) {
-        suggestions.push("• Sample size is very small (n=" + plan.n + "). Consider increasing for better statistical power.");
-    }
-    
-    // Risk constraint analysis
-    if (plan.actualAlpha > alpha * 1.2) {
-        suggestions.push("• Producer's risk is high. Consider increasing sample size or adjusting AQL.");
-    }
-    
-    if (plan.actualBeta > beta * 1.2) {
-        suggestions.push("• Consumer's risk is high. Consider increasing sample size or adjusting LTPD.");
-    }
-    
-    // Distribution-specific suggestions
-    if (lotSize < 1000) {
-        suggestions.push("• For small lots (N=" + lotSize + "), consider using Hypergeometric distribution.");
-    } else if (lotSize > 10000) {
-        suggestions.push("• For large lots (N=" + lotSize + "), Binomial or Poisson distributions are appropriate.");
-    }
-    
-    // AQL-LTPD ratio analysis
-    const ratio = ltpd / aql;
-    if (ratio < 3) {
-        suggestions.push("• AQL-LTPD ratio is small (" + ratio.toFixed(1) + "). Consider wider separation.");
-    } else if (ratio > 10) {
-        suggestions.push("• AQL-LTPD ratio is very large (" + ratio.toFixed(1) + "). This may require very large sample sizes.");
-    }
-    
-    return suggestions.join('\n');
-}
+#### 4.8 Validation Checklist
+- Return and display: `Pa_AQL`, `Pa_LTPD`, `actualAlpha`, `actualBeta`, `(n,c)`.
+- Verify feasibility for returned plan under chosen `α, β`.
+- Cross-check representative cases against standard tables where applicable.
+- Unit-test OC values at `p∈{0, p_AQL, p_LTPD}` and random points in (0, x_max].
 
 ### 5) Chart Behavior (Right panel)
 - **Canvas**: `#ocChartAQL_LTPD`
