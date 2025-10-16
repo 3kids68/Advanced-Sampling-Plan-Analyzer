@@ -4326,7 +4326,7 @@
         const pValues = [];
         const paValues = [];
 
-        // Generate OC curve data with special handling for low defect rates
+        // Generate OC curve data (delegate to acceptance function; keep p=0 shortcut)
         for (let p = 0; p <= xMax / 100; p += step) {
             pValues.push(p * 100);
             try {
@@ -4334,9 +4334,6 @@
                 if (p === 0) {
                     // Perfect quality: always accept
                     pa = 1;
-                } else if (p < 1e-6) {
-                    // Extremely low defect rate: use asymptotic approximation
-                    pa = 1 - Math.exp(-plan.n * p * (1 + p/2));
                 } else {
                     pa = calculateAcceptanceProbability(plan.n, plan.c, p, 
                         aqlLtpdElements.lotSizeInput?.value || 1000, 
@@ -4431,6 +4428,9 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
+                layout: {
+                    padding: { top: 12 }
+                },
                 plugins: {
                     legend: {
                         display: true,
@@ -4464,14 +4464,18 @@
                     },
                     y: {
                         min: 0,
-                        max: 1,
+                        suggestedMax: 1.02,
                         title: {
                             display: true,
                             text: 'Acceptance Probability',
                             color: getEnhancedThemeColors().text
                         },
                         ticks: {
-                            callback: function(v) { return (v * 100).toFixed(0) + '%'; },
+                            callback: function(v) {
+                                const vv = Math.min(1, Math.max(0, v));
+                                return (vv * 100).toFixed(0) + '%';
+                            },
+                            padding: 6,
                             color: getEnhancedThemeColors().text
                         },
                         grid: { color: getEnhancedThemeColors().grid },
